@@ -1,0 +1,183 @@
+<!doctype html>
+<html class="dark">
+<head>
+    <title>Link MasterXS - CharbelAI Toolkits</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Font Awesome for heart icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-A4CFS2oE9T3I+P0E1AxEzkxTzS+YhMzZrADAtNJmj5PFuXUs0Yg7JqR1q6ZG41pjX9E70mYPz4lE7j1JIT+57g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Your CSS file -->
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body class="flex flex-col bg-white dark:bg-gray-950 text-black Link ShortcutsPage">
+    <header class="border-b border-gray-100">
+        <div class="w-full px-4 container flex h-16 items-center">
+            <div class="flex flex-1 items-center">
+                <a href="#" class="mr-5 flex flex-none items-center lg:mr-6">
+                    <img src="logo.png" alt="Logo" class="w-7 md:mr-2">
+                    <span class="hidden whitespace-nowrap text-lg font-bold md:block">Link MasterXS</span>
+                </a>
+            </div>
+            <nav class="ml-auto hidden lg:block">
+                <ul class="flex items-center space-x-1.5 2xl:space-x-2">
+                    <li class="hover:text-indigo-700"><a href="toolkits.html" class="group flex items-center px-2 py-0.5 dark:hover:text-gray-400">Toolkits</a></li>
+                    <li class="hover:text-indigo-700"><a href="links.html" class="group flex items-center px-2 py-0.5 dark:hover:text-gray-400">Links</a></li>
+                </ul>
+                <!-- <div class="auth-links">
+                    <a href="login.html" class="group flex items-center px-2 py-0.5 dark:hover:text-gray-400">Log In</a>
+                    <a href="signup.html" class="group flex items-center px-2 py-0.5 dark:hover:text-gray-400">Sign Up</a>
+                </div> -->
+            </nav>
+        </div>
+    </header>
+    <main class="flex min-h-dvh flex-col">
+        <div class="container">
+            <!-- Controls -->
+            <div class="controls">
+                <div class="my-2 max-w-full items-center justify-between space-y-3 sm:flex sm:space-y-0 lg:my-4">
+                <div class="flex">
+                    <div class="relative w-full sm:max-w-xs mr-3">
+                        <input type="search" id="searchInput" placeholder="Search links..." class="w-full rounded-full border border-gray-200 text-sm placeholder-gray-400 shadow-inner outline-none focus:shadow-xl focus:ring-1 focus:ring-inset dark:bg-gray-950 h-8 pl-8">
+                        <svg class="absolute left-2.5 top-2 text-gray-300 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <div class="relative inline-block">
+                        <button id="sortButton" class="btn w-full cursor-pointer text-sm inline-block items-center" type="button">
+                            <svg class="mr-1 inline" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" role="img" width="1em" height="1em" viewBox="0 0 32 32">
+                                <path d="M27.6 20.6L24 24.2V4h-2v20.2l-3.6-3.6L17 22l6 6l6-6z" fill="currentColor"></path>
+                                <path d="M9 4l-6 6l1.4 1.4L8 7.8V28h2V7.8l3.6 3.6L15 10z" fill="currentColor"></path>
+                            </svg>
+                            <span>Sort:</span> <span id="selectedSort" class="ml-1">Recently Created</span>
+                        </button>
+                        
+                        <div id="sortDropdown" class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 hidden" style="z-index: 9;">
+                            <div class="py-1">
+                                <a href="#" class="sort-option block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" data-value="date_added">Recently Created</a>
+                                <a href="#" class="sort-option block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" data-value="date_updated">Recently Updated</a>
+                                <a href="#" class="sort-option block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" data-value="alphabetical">Alphabetical</a>
+                                <a href="#" class="sort-option block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" data-value="score">Score</a>
+                            </div>
+                        </div>
+                    </div> 
+                </div>
+                <input id="sortSelect" type="text" class="btn mr-2 self-stretch text-sm opacity-80 hover:opacity-100 max-lg:px-2 max-sm:ml-auto lg:rounded-full absolute mt-2 hidden" value="date-added">
+               
+                <script>
+                    const sortButton = document.getElementById('sortButton');
+                    const sortDropdown = document.getElementById('sortDropdown');
+                    const selectedSort = document.getElementById('selectedSort');
+                    const sortsSelect = document.getElementById('sortSelect');
+
+                    sortButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        sortDropdown.classList.toggle('hidden');
+                    });
+
+                    document.querySelectorAll('.sort-option').forEach(option => {
+                        option.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            selectedSort.textContent = e.target.textContent;
+                            sortsSelect.value = e.target.textContent.toLowerCase().replace(' ', '_');
+                            sortDropdown.classList.add('hidden');
+                        });
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!sortButton.contains(e.target) && !sortDropdown.contains(e.target)) {
+                            sortDropdown.classList.add('hidden');
+                        }
+                    });
+                </script>
+                
+                <div class="inline-flex items-center bg-gradient-to-br px-3 font-mono text-base md:text-lg from-indigo-100 dark:from-indigo-800 rounded-full to-white dark:to-black text-indigo-700 dark:text-indigo-200 mb-4 "><svg class="md:text-lg mr-2 relative" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" fill="none" focusable="false" role="img" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 32 32"><path d="M16 6.52l2.76 5.58l.46 1l1 .15l6.16.89l-4.38 4.3l-.75.73l.18 1l1.05 6.13l-5.51-2.89L16 23l-.93.49l-5.51 2.85l1-6.13l.18-1l-.74-.77l-4.42-4.35l6.16-.89l1-.15l.46-1L16 6.52M16 2l-4.55 9.22l-10.17 1.47l7.36 7.18L6.9 30l9.1-4.78L25.1 30l-1.74-10.13l7.36-7.17l-10.17-1.48z" fill="currentColor"></path></svg>
+                    <label class="flex items-center ml-4">
+                        <input type="checkbox" id="favoritedFirst" class="mr-2" hidden> Spaces of the week 🔥
+                    </label></div>
+
+                </div>
+                <!-- Tags Toolbar -->
+                <div id="tagsToolbar" class="ml-4"></div>
+            </div>
+            <!-- Links Grid -->
+            <div id="linksGrid" class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-3 xl:grid-cols-4"></div>
+            <!-- Add Link Button -->
+            <button id="addLinkBtn" class="btn">Add Link</button>
+        </div>
+        <!-- Modal for Add/Edit Link -->
+         <div id="modal-container" >
+            <div id="linkModal" class="modal">
+                <div class="modal-content">
+                    <span id="closeModal" class="close float-right">&times;</span>
+                    <h2 id="modalTitle" class="text-xl font-bold mb-4">Add Link Shortcut</h2>
+                    <form id="linkForm" class="space-y-4">
+                        <input type="hidden" id="linkId">
+                        <div class="mb-4">
+                            <label for="linkName" class="block text-gray-700 text-sm font-bold mb-2">Name</label>
+                            <input type="text" id="linkName" required class="shadow appearance-none form-input border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div class="mb-4">
+                            <label for="linkUrl" class="block text-gray-700 text-sm font-bold mb-2">Link</label>
+                            <input type="url" id="linkUrl" required class="shadow appearance-none form-input border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div class="mb-4">
+                            <label for="linkTags" class="block text-gray-700 text-sm font-bold mb-2">Tags (comma separated)</label>
+                            <input type="text" id="linkTags" class="shadow appearance-none form-input border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div class="mb-4">
+                            <label for="linkEmojis" class="block text-gray-700 text-sm font-bold mb-2">Emojis</label>
+                            <input type="text" id="linkEmojis" class="shadow appearance-none form-input border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        <div class="flex mb-4">
+                            <div class="flex flex-1 pr-3">
+                                <div class="block"> 
+                                    <label for="colorFrom" class="block flex-1 text-gray-700 text-sm font-bold mb-2">Color From</label>
+                                    <input type="color" id="colorFrom" value="#ffffff" class="color shadow appearance-none form-input border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline">
+                                </div>
+                            
+                            </div>
+                            <div class="flex flex-1 pr-3">
+    
+                                <div class="block"> 
+                                    <label for="colorTo" class="block flex-1 text-gray-700 text-sm font-bold mb-2">Color To</label>
+                            <input type="color" id="colorTo" value="#ffffff" class="color shadow appearance-none form-input border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline">
+                                    </div>
+                            </div>
+                            <div class="flex flex-1">
+                             
+                                <div class="block"> 
+                                    <label for="score" class="block text-gray-700 text-sm font-bold mb-2">Score (0.0 to 10.0)</label>
+                                    <input type="number" id="score" min="0" max="10" step="0.1" class="shadow appearance-none form-input border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                              </div>
+    
+                                </div>
+                        </div>
+                        <!-- <div class="mb-4">
+                            <label for="colorTo" class="block text-gray-700 text-sm font-bold mb-2">Color To</label>
+                            <input type="color" id="colorTo" value="#000000" class="shadow appearance-none form-input border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline">
+                        </div> -->
+                        <div class="mb-4">
+                            <label for="shortDescription" class="block text-gray-700 text-sm font-bold mb-2">Short Description</label>
+                            <textarea id="shortDescription" class="shadow appearance-none form-input border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+                        </div>
+                        
+                        <div class="mb-4 flex items-center">
+                            <label class="flex items-center mr-4">
+                                <input type="checkbox" id="pinned" class="mr-2"> Pinned
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="favorited" class="mr-2"> Favorited
+                            </label>
+                        </div>
+                        <button type="submit" id="saveLinkBtn" class="btn">Save</button>
+                    </form>
+                </div>
+            </div>
+         </div>
+        
+    </main>
+    <!-- Include your JavaScript file -->
+    <script src="../static/js/script.js"></script>
+</body>
+</html>
