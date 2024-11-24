@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file, abort
 import json
 import uuid
 from datetime import datetime
 from flask_cors import CORS
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -36,7 +37,7 @@ def get_shortcuts():
 
     # Filter by search query
     if search_query:
-        shortcuts = [s for s in shortcuts if search_query in s['name'].lower() or search_query in s['short_description'].lower()]
+        shortcuts = [s for s in shortcuts if search_query in s['name'].lower() or search_query in s.get('short_description', '').lower()]
 
     # Filter by tags
     if filter_tags:
@@ -64,6 +65,24 @@ def get_shortcuts():
         favorited = [s for s in shortcuts if s.get('favorited', False)]
         not_favorited = [s for s in shortcuts if not s.get('favorited', False)]
         shortcuts = favorited + not_favorited
+
+    # Add 'timestamp' field and ensure correct date formats
+    for shortcut in shortcuts:
+        # Ensure 'date_added' and 'date_updated' are in ISO format
+        for date_field in ['date_added', 'date_updated']:
+            if date_field in shortcut:
+                if isinstance(shortcut[date_field], str):
+                    try:
+                        # Try parsing the date string to ensure it's valid
+                        datetime.fromisoformat(shortcut[date_field])
+                    except ValueError:
+                        # If parsing fails, convert to ISO format
+                        shortcut[date_field] = datetime.strptime(shortcut[date_field], '%Y-%m-%d %H:%M:%S.%f').isoformat()
+                else:
+                    # If it's not a string, convert it to ISO format
+                    shortcut[date_field] = shortcut[date_field].isoformat()
+        # Add 'timestamp' field for frontend compatibility
+        shortcut['timestamp'] = shortcut.get('date_updated', shortcut['date_added'])
 
     return jsonify(shortcuts), 200
 
@@ -127,6 +146,24 @@ def delete_shortcut(shortcut_id):
         return {'message': 'Shortcut not found'}, 404
     save_shortcuts(new_shortcuts)
     return {'message': 'Shortcut deleted'}, 200
+
+# @app.route('/api/favicons/<path:domain>/<int:size>')
+# def get_favicon(domain, size):
+#     # Construct the FaviconKit URL
+#     favicon_url = f'https://api.faviconkit.com/{domain}/{size}'
+#     try:
+#         response = requests.get(favicon_url, timeout=5)
+#         if response.status_code == 200:
+#             return send_file(
+#                 io.BytesIO(response.content),
+#                 mimetype='image/x-icon',
+#                 as_attachment=False,
+#                 attachment_filename=f'{domain}.ico'
+#             )
+#         else:
+#             abort(404)
+#     except requests.RequestException:
+#         abort(404)
 
 if __name__ == '__main__':
     app.run(debug=True)

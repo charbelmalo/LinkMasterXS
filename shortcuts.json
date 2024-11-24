@@ -111,5 +111,23 @@
         "score": 0,
         "date_added": "2024-11-23T03:48:40.349634",
         "date_updated": "2024-11-23T03:48:40.349690"
+    },
+    {
+        "id": "fff56715-cbb7-43ce-8bf4-60c46a9e8720",
+        "name": "Serpentine Desire",
+        "link": "https://www.youtube.com/watch?v=FKBMFxCfU7c&list=LL&index=10&t=1832s&ab_channel=AimToHeadMix",
+        "tags": [
+            "Music",
+            "Hot"
+        ],
+        "emojis": "\ud83d\udd25\ud83c\udf46",
+        "color_from": "rgba(252, 3, 3, 1)",
+        "color_to": "rgba(255, 41, 198, 1)",
+        "short_description": "Hottest playlist to ever exist",
+        "pinned": false,
+        "favorited": true,
+        "score": 10,
+        "date_added": "2024-11-23T22:11:30.032563",
+        "date_updated": "2024-11-23T22:11:30.032607"
     }
 ]

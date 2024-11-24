@@ -5,17 +5,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Font Awesome for heart icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-A4CFS2oE9T3I+P0E1AxEzkxTzS+YhMzZrADAtNJmj5PFuXUs0Yg7JqR1q6ZG41pjX9E70mYPz4lE7j1JIT+57g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-A4CFS2oE9T3I+P0E1AxEzkxTzS+YhMzZrADAtNJmj5PFuXUs0Yg7JqR1q6ZG41pjX9E70mYPz4lE7j1JIT+57g==" crossorigin="anonymous" referrerpolicy="no-referrer" /> -->
     <!-- Your CSS file -->
     <link rel="stylesheet" href="../static/css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../static/font-awesome/css/font-awesome.min.css">
 </head>
 <body class="flex flex-col bg-white dark:bg-gray-950 text-black Link ShortcutsPage">
     <header class="border-b border-gray-100">
         <div class="w-full px-4 container flex h-16 items-center">
             <div class="flex flex-1 items-center">
                 <a href="#" class="mr-5 flex flex-none items-center lg:mr-6">
-                    <img src="logo.png" alt="Logo" class="w-7 md:mr-2">
-                    <span class="hidden whitespace-nowrap text-lg font-bold md:block">Link MasterXS</span>
+                    <img src="/static/default/Xvault.png" style="height: 40px;" alt="Logo" class=" md:mr-2">
                 </a>
             </div>
             <nav class="ml-auto hidden lg:block">
@@ -32,9 +33,20 @@
     </header>
     <main class="flex min-h-dvh flex-col">
         <div class="container">
+            <div class="container py-6 lg:pb-7 lg:pt-10"><div class="flex flex-col justify-between lg:flex-row lg:items-end"><div class="pb-4 lg:pb-0">
+                <a href="/spaces" class="group -ml-1.5 mb-0.5 flex items-center pl-1 text-4xl font-black dark:pl-1.5">
+                    <!-- <svg class="w-10 h-10 mr-1.5 dark:mr-2 dark:drop-shadow-md" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" role="img" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 39 40"><path d="M6.3712 2.04427C3.7183 2.04427 1.56771 4.19486 1.56771 6.84776V18.3546V18.6544V32.7341C1.56771 35.3868 3.71818 37.5377 6.3712 37.5377H17.878H20.7507H32.2575C34.9104 37.5377 37.0612 35.387 37.0612 32.7341V21.6204C37.0612 20.177 36.4252 18.8839 35.4189 18.004C36.4576 16.3895 37.0612 14.4666 37.0612 12.4046C37.0612 6.68274 32.4225 2.04427 26.7007 2.04427C24.6388 2.04427 22.7159 2.64776 21.1014 3.68647C20.2214 2.6802 18.9282 2.04427 17.4849 2.04427H6.3712Z" fill="black" class="stroke-white dark:stroke-white/20" stroke-width="3.07552"></path><path d="M9.56855 23.5001C8.8406 23.5001 8.25047 24.0902 8.25047 24.8182V29.5361C8.25047 30.2641 8.8406 30.8542 9.56855 30.8542H14.2864C15.0144 30.8542 15.6045 30.2641 15.6045 29.5361V24.8182C15.6045 24.0902 15.0143 23.5001 14.2864 23.5001H9.56855Z" fill="#FF3270"></path><path d="M24.3409 23.5001C23.613 23.5001 23.0228 24.0902 23.0228 24.8182V29.5361C23.0228 30.2641 23.613 30.8542 24.3409 30.8542H29.0588C29.7868 30.8542 30.3769 30.2641 30.3769 29.5361V24.8182C30.3769 24.0902 29.7868 23.5001 29.0588 23.5001H24.3409Z" fill="#861FFF"></path><path d="M9.56855 8.72815C8.8406 8.72815 8.25047 9.31827 8.25047 10.0462V14.7641C8.25047 15.4921 8.8406 16.0822 9.56855 16.0822H14.2864C15.0144 16.0822 15.6045 15.4921 15.6045 14.7641V10.0462C15.6045 9.31827 15.0143 8.72815 14.2864 8.72815H9.56855Z" fill="#097EFF"></path><path d="M26.6999 8.72815C24.6692 8.72815 23.0228 10.3744 23.0228 12.4052C23.0228 14.4359 24.6692 16.0822 26.6999 16.0822C28.7306 16.0822 30.3769 14.4359 30.3769 12.4052C30.3769 10.3744 28.7306 8.72815 26.6999 8.72815Z" fill="#FFD702"></path></svg> -->
+					<h1 class="group-hover:text-gray-700 dark:group-hover:text-gray-100"> LinkMaster XS </h1></a>
+				<p class="text-gray-500 sm:text-lg lg:text-xl">Discover amazing AI apps made by the community!</p></div>
+                
+			<div class="flex items-center"> <button id="addLinkBtn" class="btn btn-widget rounded-full mr-3 lg:h-9 lg:px-3.5 bg-gradient-to-br border dark:hover:border-green-600 dark:border-green-600 dark:from-green-900 dark:hover:from-green-600  dark:hover:brightness-125  focus:outline-none focus:shadow-outline  transition-all duration-100">Add New Link</button>
+				<div class="flex items-center justify-start text-sm text-gray-400">or
+					<a class="ml-2 flex items-center justify-start gap-0.5 underline" href="/spaces/launch"><svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 11 11"><path fill="#EB4872" d="M4.881 4.182c0 .101-.031.2-.087.283a.5.5 0 0 1-.242.18l-.65.217a1.3 1.3 0 0 0-.484.299 1.3 1.3 0 0 0-.298.484l-.222.639a.46.46 0 0 1-.18.242.5.5 0 0 1-.288.092.5.5 0 0 1-.294-.097.5.5 0 0 1-.175-.242l-.211-.644a1.26 1.26 0 0 0-.299-.48 1.14 1.14 0 0 0-.479-.298L.328 4.64a.48.48 0 0 1-.247-.18.515.515 0 0 1 .247-.758l.644-.21a1.28 1.28 0 0 0 .788-.789l.211-.634a.5.5 0 0 1 .165-.242.5.5 0 0 1 .283-.103.5.5 0 0 1 .294.083c.086.058.152.14.19.237l.217.659a1.28 1.28 0 0 0 .788.788l.644.222a.476.476 0 0 1 .237.18.5.5 0 0 1 .092.288"></path><path fill="#7B29F5" d="M10.031 7.458a.5.5 0 0 1-.098.314.5.5 0 0 1-.267.196l-.881.293c-.272.09-.519.242-.721.443a1.8 1.8 0 0 0-.443.721l-.31.876a.5.5 0 0 1-.185.263.56.56 0 0 1-.319.098.515.515 0 0 1-.515-.366l-.294-.88a1.8 1.8 0 0 0-.443-.722c-.204-.2-.45-.353-.72-.448l-.881-.288a.57.57 0 0 1-.263-.191.56.56 0 0 1-.014-.64.5.5 0 0 1 .271-.194l.886-.294A1.82 1.82 0 0 0 6.01 5.465l.293-.87a.515.515 0 0 1 .49-.377c.11 0 .219.03.314.088a.56.56 0 0 1 .206.263l.298.896a1.82 1.82 0 0 0 1.175 1.174l.875.31a.5.5 0 0 1 .263.195c.07.09.108.2.108.314"></path><path fill="#F9D849" d="M7.775 1.684a.5.5 0 0 0 .088-.262.45.45 0 0 0-.088-.263.5.5 0 0 0-.21-.155L7.24.896a.5.5 0 0 1-.165-.103.5.5 0 0 1-.103-.17l-.108-.33a.5.5 0 0 0-.165-.21A.5.5 0 0 0 6.426 0a.5.5 0 0 0-.252.098.5.5 0 0 0-.145.206l-.108.32a.5.5 0 0 1-.103.17.5.5 0 0 1-.17.102L5.334 1a.45.45 0 0 0-.216.155.5.5 0 0 0-.088.262c0 .094.029.186.083.263a.5.5 0 0 0 .216.16l.32.103q.095.03.164.103a.37.37 0 0 1 .103.165l.108.319c.031.09.088.17.165.227a.56.56 0 0 0 .252.077.42.42 0 0 0 .268-.093.5.5 0 0 0 .15-.2l.113-.325a.43.43 0 0 1 .268-.268l.32-.108a.42.42 0 0 0 .215-.155"></path></svg>
+						Learn more about Spaces
+					</a></div></div></div></div>
             <!-- Controls -->
-            <div class="controls">
-                <div class="my-2 max-w-full items-center justify-between space-y-3 sm:flex sm:space-y-0 lg:my-4">
+            <div class="controls border-t border-gray-100">
+                <div class="my-2 max-w-full items-center justify-between space-y-3 sm:flex sm:space-y-0 lg:my-4  py-2">
                 <div class="flex">
                     <div class="relative w-full sm:max-w-xs mr-3">
                         <input type="search" id="searchInput" placeholder="Search links..." class="w-full rounded-full border border-gray-200 text-sm placeholder-gray-400 shadow-inner outline-none focus:shadow-xl focus:ring-1 focus:ring-inset dark:bg-gray-950 h-8 pl-8">
@@ -90,20 +102,30 @@
                         }
                     });
                 </script>
+                <div class="flex">
+                <div id="favoritedFilterContainer" class="btn inline-flex items-center bg-gradient-to-br px-3 text-base md:text-lg from-red-100 dark:from-red-50 rounded to-white dark:to-red-100 dark:hover:from-red-500 text-red-700 dark:text-white  ">
                 
-                <div class="inline-flex items-center bg-gradient-to-br px-3 font-mono text-base md:text-lg from-indigo-100 dark:from-indigo-800 rounded-full to-white dark:to-black text-indigo-700 dark:text-indigo-200 mb-4 "><svg class="md:text-lg mr-2 relative" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" fill="none" focusable="false" role="img" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 32 32"><path d="M16 6.52l2.76 5.58l.46 1l1 .15l6.16.89l-4.38 4.3l-.75.73l.18 1l1.05 6.13l-5.51-2.89L16 23l-.93.49l-5.51 2.85l1-6.13l.18-1l-.74-.77l-4.42-4.35l6.16-.89l1-.15l.46-1L16 6.52M16 2l-4.55 9.22l-10.17 1.47l7.36 7.18L6.9 30l9.1-4.78L25.1 30l-1.74-10.13l7.36-7.17l-10.17-1.48z" fill="currentColor"></path></svg>
-                    <label class="flex items-center ml-4">
-                        <input type="checkbox" id="favoritedFirst" class="mr-2" hidden> Spaces of the week 🔥
-                    </label></div>
+                    
+                    <label class="flex items-center ml-2">
+                        <!-- Hidden checkbox -->
+                        <input type="checkbox" id="favoritedFirst" class="hidden">
+                        <span class="text-sm"> <i class="fa fa-solid fa-heart-o fa-beat" id="favoritedIcon"></i> Favorited First</span>
+                    </label>
+                </div>
+               
+                </div>
+
 
                 </div>
                 <!-- Tags Toolbar -->
-                <div id="tagsToolbar" class="ml-4"></div>
+               <div class="border-t border-gray-100 w-100 py-4">
+                <span class="text-sm font-bold">Tags:</span> <div id="tagsToolbar" class="ml-2  inline-block"></div>
+               </div>
             </div>
             <!-- Links Grid -->
-            <div id="linksGrid" class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-3 xl:grid-cols-4"></div>
+            <div id="linksGrid" class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-3 xl:grid-cols-4  border-gray-100 w-100 py-4"></div>
             <!-- Add Link Button -->
-            <button id="addLinkBtn" class="btn">Add Link</button>
+           
         </div>
         <!-- Modal for Add/Edit Link -->
          <div id="modal-container" >
