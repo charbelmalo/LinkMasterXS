@@ -11887,13 +11887,7 @@ label:has(input:disabled):is(.dark *) {
     var(--tw-sepia) var(--tw-drop-shadow);
 }
 .drop-shadow-2xl {
-  --tw-drop-shadow: drop-shadow(0 5px 10px rgb(0 0 0 / 1));
-  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast)
-    var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate)
-    var(--tw-sepia) var(--tw-drop-shadow);
-}
-.drop-shadow-3xl {
-  --tw-drop-shadow: drop-shadow(0 5px 25px rgb(0 0 0 / 0.45));
+  --tw-drop-shadow: drop-shadow(0 25px 25px rgb(0 0 0 / 0.15));
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast)
     var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate)
     var(--tw-sepia) var(--tw-drop-shadow);
@@ -23451,35 +23445,16 @@ table.inference-table tr th:last-child {
   height: 50px;
 }
 input.color {
-  
+  padding: 5px;
+  border-radius: 10px;
+  width: 150px;
+  height: 38px;
+  background-color: rgb(255 255 255 / 0.1);
 }
 #modal-container {
   position: fixed;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background-color: rgba(0, 0, 0, 0.35);
-}
-
-.shortcut-card:hover{
-  background-filter: blur(600px);
-
-}
-.shortcut-card:hover h4{
-  transform: scale(1.1);
-
-}
-.transition-all-200{
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.link-card:hover .emoji, .link-card:hover .card-title {
-  transform: scale(1.05);
-}
-.link-card:hover .emoji{
-  filter: saturate(2)
-}
-
-.link-card:hover .emoji, .link-card:hover .card-title {
-  filter: none;
+  background-color: rgba(0, 0, 0, 0.21);
 }
