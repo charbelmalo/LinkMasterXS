@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from datetime import datetime
 import uuid
 
@@ -9,11 +10,15 @@ CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shortcuts.db'
 db = SQLAlchemy(app)
 
+shortcut_tags = db.Table('shortcut_tags',
+    db.Column('shortcut_id', db.String(36), db.ForeignKey('shortcut.id'), primary_key=True),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True)
+)
+
 class Shortcut(db.Model):
     id = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     link = db.Column(db.String(500), nullable=False)
-    tags = db.Column(db.String(500), nullable=False)
     emojis = db.Column(db.String(100), nullable=True)
     color_from = db.Column(db.String(20), nullable=False)
     color_to = db.Column(db.String(20), nullable=False)
@@ -23,6 +28,13 @@ class Shortcut(db.Model):
     score = db.Column(db.Float, default=0.0)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    tags = db.relationship('Tag', secondary=shortcut_tags, backref=db.backref('shortcuts', lazy='dynamic'))
+
+class Tag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    parent_id = db.Column(db.Integer, db.ForeignKey('tag.id'))
+    parent = db.relationship('Tag', remote_side=[id], backref='children')
 
 @app.route('/')
 def index():
@@ -31,15 +43,37 @@ def index():
 @app.route('/api/tags', methods=['GET'])
 def get_tags():
     search_query = request.args.get('search', '').lower()
-    tags = {}
-    shortcuts = Shortcut.query.all()
-    for shortcut in shortcuts:
-        for tag in [t.strip() for t in shortcut.tags.split(',')]:
-            if search_query in tag.lower():
-                tags[tag] = tags.get(tag, 0) + 1
-    tags_list = [{'name': k, 'count': v} for k, v in tags.items()]
-    tags_list.sort(key=lambda x: x['count'], reverse=True)
-    return jsonify(tags_list), 200
+    tags_query = Tag.query
+
+    if search_query:
+        tags_query = tags_query.filter(Tag.name.ilike(f'%{search_query}%'))
+
+    tags = tags_query.all()
+
+    def get_tag_shortcut_count(tag):
+        count = tag.shortcuts.count()
+        for child in tag.children:
+            count += get_tag_shortcut_count(child)
+        return count
+
+    def build_tag_tree(parent_id=None):
+        tag_nodes = [tag for tag in tags if tag.parent_id == parent_id]
+        result = []
+        for tag in tag_nodes:
+            tag_count = get_tag_shortcut_count(tag)
+            tag_dict = {
+                'id': tag.id,
+                'name': tag.name,
+                'parent_id': tag.parent_id,
+                'count': tag_count,
+                'children': build_tag_tree(tag.id)
+            }
+            result.append(tag_dict)
+        return result
+
+    tags_tree = build_tag_tree()
+
+    return jsonify(tags_tree), 200
 
 @app.route('/api/shortcuts', methods=['GET'])
 def get_shortcuts():
@@ -54,13 +88,23 @@ def get_shortcuts():
         shortcuts_query = shortcuts_query.filter(
             (Shortcut.name.ilike(f'%{search_query}%')) |
             (Shortcut.short_description.ilike(f'%{search_query}%')) |
-            (Shortcut.link.ilike(f'%{search_query}%')) |
-            (Shortcut.tags.ilike(f'%{search_query}%'))
+            (Shortcut.link.ilike(f'%{search_query}%'))
         )
 
     if filter_tags:
-        for tag in filter_tags:
-            shortcuts_query = shortcuts_query.filter(Shortcut.tags.ilike(f'%{tag}%'))
+        selected_tags = Tag.query.filter(Tag.name.in_(filter_tags)).all()
+        tag_ids = set()
+
+        def get_all_descendant_tag_ids(tag):
+            tag_ids.add(tag.id)
+            for child in tag.children:
+                get_all_descendant_tag_ids(child)
+
+        for tag in selected_tags:
+            get_all_descendant_tag_ids(tag)
+
+        shortcuts_query = shortcuts_query.join(Shortcut.tags).filter(Tag.id.in_(tag_ids))
+
     if sort_by == 'alphabetical':
         shortcuts_query = shortcuts_query.order_by(Shortcut.name.asc())
     elif sort_by == 'date_updated':
@@ -70,9 +114,7 @@ def get_shortcuts():
     elif sort_by == 'date_added':
         shortcuts_query = shortcuts_query.order_by(Shortcut.date_added.desc())
     else:
-        # Default sorting
         shortcuts_query = shortcuts_query.order_by(Shortcut.date_added.desc())
-
 
     shortcuts = shortcuts_query.all()
 
@@ -89,7 +131,7 @@ def get_shortcuts():
             'id': shortcut.id,
             'name': shortcut.name,
             'link': shortcut.link,
-            'tags': [tag.strip() for tag in shortcut.tags.split(',') if tag.strip()],
+            'tags': [tag.name for tag in shortcut.tags],
             'emojis': shortcut.emojis,
             'color_from': shortcut.color_from,
             'color_to': shortcut.color_to,
@@ -103,7 +145,6 @@ def get_shortcuts():
 
     return jsonify(shortcuts_list), 200
 
-
 @app.route('/api/shortcuts/<shortcut_id>', methods=['PUT'])
 def update_shortcut(shortcut_id):
     data = request.get_json()
@@ -112,12 +153,13 @@ def update_shortcut(shortcut_id):
     if not shortcut:
         return {'message': 'Shortcut not found'}, 404
 
-    for key in ['name', 'link', 'tags', 'emojis', 'color_from', 'color_to', 'short_description', 'pinned', 'favorited', 'score']:
+    for key in ['name', 'link', 'emojis', 'color_from', 'color_to', 'short_description', 'pinned', 'favorited', 'score']:
         if key in data:
-            if key == 'tags':
-                setattr(shortcut, key, ','.join(data[key]))
-            else:
-                setattr(shortcut, key, data[key])
+            setattr(shortcut, key, data[key])
+
+    if 'tags' in data:
+        tags = process_tags(data['tags'])
+        shortcut.tags = tags
 
     db.session.commit()
 
@@ -135,7 +177,6 @@ def delete_shortcut(shortcut_id):
 
     return {'message': 'Shortcut deleted'}, 200
 
-
 @app.route('/api/shortcuts', methods=['POST'])
 def add_shortcut():
     data = request.get_json()
@@ -144,18 +185,20 @@ def add_shortcut():
     if not all(field in data and data[field] for field in required_fields):
         return {'message': 'Missing required fields or empty values'}, 400
 
+    tags = process_tags(data['tags'])
+
     shortcut = Shortcut(
         id=str(uuid.uuid4()),
         name=data['name'],
         link=data['link'],
-        tags=','.join(data['tags']),
         emojis=data['emojis'],
         color_from=data['color_from'],
         color_to=data['color_to'],
         short_description=data['short_description'],
         pinned=data.get('pinned', False),
         favorited=data.get('favorited', False),
-        score=float(data.get('score', 0.0))
+        score=float(data.get('score', 0.0)),
+        tags=tags
     )
 
     db.session.add(shortcut)
@@ -163,10 +206,24 @@ def add_shortcut():
 
     return jsonify({'message': 'Shortcut added successfully'}), 201
 
+def process_tags(tag_strings):
+    tags = []
+    for tag_string in tag_strings:
+        hierarchy = [t.strip() for t in tag_string.split('>') if t.strip()]
+        parent = None
+        for tag_name in hierarchy:
+            tag = Tag.query.filter_by(name=tag_name, parent=parent).first()
+            if not tag:
+                tag = Tag(name=tag_name, parent=parent)
+                db.session.add(tag)
+                db.session.flush()
+            parent = tag
+        tags.append(parent)
+    return tags
 
 @app.route('/static/<path:filename>')
 def custom_static(filename):
-    return send_from_directory('static', filename, cache_timeout=31536000)  # Cache for 1 year
+    return send_from_directory('static', filename, cache_timeout=31536000)
 
 if __name__ == '__main__':
     with app.app_context():

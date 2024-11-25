@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ContainerModal = document.getElementById('modal-container');
     const closeModalBtn = document.getElementById('closeModal');
     const linkForm = document.getElementById('linkForm');
+    let selectedTags = []; // Keep track of selected tags
 
     // Form fields
     const linkIdField = document.getElementById('linkId');
@@ -39,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkTagsInput = document.getElementById('linkTags');
     const tagsDropdown = document.getElementById('tagsDropdown');
 
-    // Event listener for linkTagsInput (Autocomplete)
-    linkTagsInput.addEventListener('input', () => {
+      // Event listener for linkTagsInput (Autocomplete)
+      linkTagsInput.addEventListener('input', () => {
         const query = linkTagsInput.value.trim().split(/[,>]/).pop().trim();
         if (query.length === 0) {
             tagsDropdown.classList.add('hidden');
@@ -53,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderTagsDropdown(tags);
             });
     });
+
 
     // Event listener to hide tagsDropdown when clicking outside
     document.addEventListener('click', (e) => {
@@ -86,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch shortcuts from the API
     function fetchShortcuts() {
         const searchQuery = searchInput.value.toLowerCase();
+        
         const selectedTags = Array.from(document.querySelectorAll('#tagsToolbar input:checked')).map(input => input.value);
 
         const searchParams = new URLSearchParams();
@@ -116,6 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
             shortcuts.forEach(shortcut => {
                 // Create the <article> element
                 const article = document.createElement('article');
+                const averageLuminance = calculateAverageLuminance(shortcut.color_from, shortcut.color_to);
+                const textColor = 'text-white';
+                const overlayStrength = averageLuminance > 0.5 ? 'luminanceneg' : 'luminancepos' ;
                 article.className = 'transition-all duration-200 opacity-1';
 
                 // Create the link card container
@@ -123,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 linkCard.href = shortcut.link;
                 linkCard.target = '_blank';
                 linkCard.setAttribute('aria-label', 'Visit ' + shortcut.name);
-                linkCard.className = 'link-card relative z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden hover:brightness-110 transition-all duration-200 h-40 rounded-lg';
+                linkCard.className = `link-card ${overlayStrength} relative z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden brightness-120 transition-all duration-200 h-40 rounded-lg`;
                 linkCard.style.backgroundImage = `linear-gradient(to bottom right, ${shortcut.color_from}, ${shortcut.color_to})`;
 
                 // Add gradient overlay
@@ -131,13 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 gradientOverlay.className = 'absolute left-0 top-0 h-full w-full bg-gradient-to-br from-black/50 to-black/5';
                 linkCard.appendChild(gradientOverlay);
 
+               
                 // Status badge (e.g., "Shortcut")
                 const statusBadgeContainer = document.createElement('div');
-                statusBadgeContainer.className = 'absolute right-16 flex flex-wrap content-start gap-1 overflow-hidden top-3 left-3 text-xs';
+                statusBadgeContainer.className = 'absolute hidden right-16 flex flex-wrap content-start gap-1 overflow-hidden top-3 left-3 text-xs';
                 const statusBadge = document.createElement('div');
-                statusBadge.className = 'inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/10 leading-tight text-white opacity-80';
+                statusBadge.className = `inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/10 leading-tight ${textColor} opacity-80`;
                 const statusBadgeContent = document.createElement('div');
-                statusBadgeContent.className = 'inline-flex items-center px-1 py-0';
+                statusBadgeContent.className = 'inline-flex items-center px-1 py-0 ';
                 statusBadgeContent.textContent = 'Shortcut';
                 statusBadge.appendChild(statusBadgeContent);
                 statusBadgeContainer.appendChild(statusBadge);
@@ -146,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Icon and count container (e.g., score)
                 if (shortcut.score !== undefined && shortcut.score !== null && shortcut.score !== 0) {
                     const iconContainer = document.createElement('div');
-                    iconContainer.className = 'absolute flex px-2 items-center rounded-xl top-2.5 right-4 text-xs  py-1 inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20 leading-tight text-white opacity-80';
+                    iconContainer.className = 'absolute hidden flex px-2 items-center rounded-xl top-2.5 right-4 text-xs  py-1 inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20 leading-tight text-white opacity-60';
                     const icon = document.createElement('i');
                     icon.className = 'fa fa-xs fa-star text-white mr-1';
                     iconContainer.appendChild(icon);
@@ -161,13 +168,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Emoji overlay
                 const emojiDiv = document.createElement('div');
                 emojiDiv.className = 'emoji absolute opacity-60 text-6xl mb-1 drop-shadow-xl transition-transform duration-200';
+                emojiDiv.style.textShadow = '0px 5px 5px rgba(0, 0, 0, 0.2)';
                 emojiDiv.textContent = shortcut.emojis || '🔗';
                 linkCard.appendChild(emojiDiv);
 
                 // Card Title (name)
                 const nameDiv = document.createElement('h4');
-                nameDiv.className = 'card-title z-40 max-w-full truncate text-center font-bold leading-tight text-white text-xl transition-transform duration-200';
-                nameDiv.style.textShadow = '0px 1px 2px rgba(0, 0, 0, 0.25)';
+                nameDiv.className = `card-title z-40 overflow-visible p-5 max-w-full truncate text-center font-bold leading-tight  ${textColor} text-xl transition-transform duration-200`;
+                nameDiv.style.textShadow = '0px 1px 5px rgba(0, 0, 0, 0.6)';
                 nameDiv.textContent = shortcut.name;
                 linkCard.appendChild(nameDiv);
 
@@ -186,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     descriptionDiv.appendChild(svgOverlay);
 
                     const descriptionText = document.createElement('p');
-                    descriptionText.className = 'truncate break-words bg-black/15 py-0.5 pl-2 pr-2 text-[0.78rem] rounded-tl-lg leading-tight text-white/90';
+                    descriptionText.className = `truncate break-words bg-black/20 py-0.5 pl-2 pr-2 text-[0.78rem] rounded-tl-lg transition-all duration-200 leading-tight ${textColor}`;
                     descriptionText.textContent = shortcut.short_description;
                     descriptionDiv.appendChild(descriptionText);
 
@@ -195,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Trash icon for deletion
                 const trashIcon = document.createElement('i');
-                trashIcon.className = 'trash-icon fas fa-trash-alt absolute top-2 right-2 text-gray-500 opacity-0 transition-opacity duration-200';
+                trashIcon.className = 'trash-icon fa fa-solid fa-trash absolute top-2 right-2 text-gray-500 opacity-0 transition-opacity duration-200';
                 linkCard.appendChild(trashIcon);
 
                 // Event listener for hover
@@ -203,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (isCmdPressed) {
                         trashIcon.classList.remove('opacity-0');
                     }
+
                 });
 
                 linkCard.addEventListener('mouseleave', () => {
@@ -249,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     // Navigate to the link after a short delay
                     setTimeout(() => {
-                        // window.open(shortcut.link, '_blank');
+                        window.open(shortcut.link, '_blank');
                     }, 300); // Adjust delay as needed
                 });
 
@@ -267,18 +276,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 const domainLi = document.createElement('li');
                 domainLi.className = 'group relative flex items-center whitespace-nowrap';
                 const domainSpan = document.createElement('span');
-                domainSpan.className = 'flex items-center gap-2';
+                domainSpan.className = 'flex items-center gap-2 text-white dark:text-gray-100 text-xs font-mono mt-1';
 
                 // Create the favicon image
                 const faviconImg = document.createElement('img');
-                faviconImg.className = 'w-4 h-4 rounded-sm';
+                faviconImg.onload = function() {
+                    const favLuminance = getImageLuminance(faviconImg);
+                    console.log*('loaded ${domain} favicon with luminance ${favLuminance}');
+                    if (favLuminance < 0.2) {
+                        faviconImg.classList.remove = 'dark:from-gray-900','to-transparent';
+                        faviconImg.classList.add = 'dark:from-gray-100','dark:to-white';
+                    } else {
+                        faviconImg.style.backgroundColor = 'white';
+                    }
+                };
                 faviconImg.src = `https://${encodeURIComponent(domain)}/favicon.ico`;
-
+                faviconImg.className = 'w-6 h-6 rounded-md bg-gradient-to-tr from-gray-300 dark:from-gray-900 to-transparent hover:to-gray-700 p-1';
+               
                 // Handle image loading errors by providing a fallback icon
                 faviconImg.onerror = () => {
                     faviconImg.src = 'static/default/favicon.svg';
                 };
-                
                 // Create the domain text
                 const domainText = document.createElement('span');
                 domainText.textContent = domain;
@@ -357,8 +375,8 @@ document.addEventListener('DOMContentLoaded', () => {
         update();
     }
 
-    // Fetch and render tags for the tags toolbar
-    function fetchTags() {
+      // Fetch and render tags for the tags toolbar
+      function fetchTags() {
         fetch('/api/tags')
             .then(response => response.json())
             .then(tags => {
@@ -375,22 +393,42 @@ document.addEventListener('DOMContentLoaded', () => {
             tagContainer.classList.add('flex', 'flex-shrink-0');
 
             const tagLabel = document.createElement('label');
-            tagLabel.classList.add('tag', 'tag-white', 'flex', 'items-center', 'gap-1', 'bg-gradient-to-br', 'dark:from-gray-800', 'px-2', 'py-2', 'rounded-lg', 'cursor-pointer', 'transition-all', 'duration-200', 'mr-0.5', 'border', 'dark:checked:border-blue-100', 'dark:border-gray-800', 'bg-gradient-to-br', 'dark:from-black', 'dark:border-2');
-
+            tagLabel.classList.add('flex', 'bg-gradient-to-br','hover:opacity-100' ,'rounded-lg', 'from-gray-600', 'opacity-30','to-black', 'items-center', 'gap-1', 'px-2', 'py-2', 'cursor-pointer', 'transition-all', 'duration-200');
+           
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.classList.add('hidden', 'rounded-full', 'border', 'border-blue-100', 'dark:border-gray-800', 'bg-gradient-to-br', 'dark:from-black', 'dark:border-2');
+            checkbox.classList.add('hidden');
             checkbox.value = tag.name;
+            checkbox.checked = selectedTags.includes(tag.name);
             checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                     tagLabel.classList.remove('opacity-30');
+           
+                    selectedTags.push(tag.name);
+                } else {
+                    selectedTags = selectedTags.filter(t => t !== tag.name);
+                    tagLabel.classList.add('opacity-30');
+                }
                 fetchShortcuts();
+                renderTags(tagsData); // Re-render tags to update styles
             });
 
+            // Determine classes based on checkbox state
+            if (checkbox.checked) {
+                tagLabel.classList.add('bg-gradient-to-br', 'from-blue-500', 'to-blue-900', 'text-white');
+                tagLabel.classList.remove('opacity-30');
+            } else {
+                tagLabel.classList.add('bg-gray-200', 'text-gray-100');
+                tagLabel.classList.add('opacity-30');
+
+            }
+
             const tagSpan = document.createElement('span');
-            tagSpan.className = 'text-xs font-mono text-white cursor-pointer';
+            tagSpan.className = 'text-xs font-mono cursor-pointer';
             tagSpan.textContent = `${tag.name} `;
 
             const tagCount = document.createElement('span');
-            tagCount.className = 'px-2 items-center rounded-xl top-2.5 right-4 text-xs inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded border border-white/2 bg-white/10 leading-tight text-white opacity-80';
+            tagCount.className = 'px-2 items-center rounded-xl text-xs text-gray-100 font-bold inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/10 leading-tight opacity-80 hover:opacity-30 transition-opacity duration-200';
             tagCount.textContent = `${tag.count} `;
 
             tagLabel.appendChild(checkbox);
@@ -423,6 +461,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         tagsDropdown.classList.remove('hidden');
     }
+
+    
 
     // Event listener for cmd/ctrl key
     window.addEventListener('keydown', (e) => {
@@ -527,6 +567,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
+    function getImageLuminance(img) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        context.drawImage(img, 0, 0, img.width, img.height);
+        const imageData = context.getImageData(0, 0, img.width, img.height).data;
+        let totalLuminance = 0;
+        let pixelCount = 0;
+        for (let i = 0; i < imageData.length; i += 4) {
+            const r = imageData[i];
+            const g = imageData[i + 1];
+            const b = imageData[i + 2];
+            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+            totalLuminance += luminance;
+            pixelCount++;
+        }
+        return (totalLuminance / pixelCount) / 255;
+    }
+
     // Convert HEX to RGBA
     function hexToRgba(hex) {
         const bigint = parseInt(hex.slice(1), 16);
@@ -561,6 +622,22 @@ document.addEventListener('DOMContentLoaded', () => {
             linkIdField.value = '';
         }
         ContainerModal.classList.remove('hidden');
+    }
+      // Function to calculate average luminance of two colors
+      function calculateAverageLuminance(color1, color2) {
+        const luminance1 = getLuminance(color1);
+        const luminance2 = getLuminance(color2);
+        return (luminance1 + luminance2) / 2;
+    }
+
+    // Function to calculate luminance of a color
+    function getLuminance(rgba) {
+        const rgb = rgba.replace(/^rgba?\(|\s+|\)$/g, '').split(',');
+        const r = parseInt(rgb[0]) / 255;
+        const g = parseInt(rgb[1]) / 255;
+        const b = parseInt(rgb[2]) / 255;
+        // Use the luminance formula
+        return 0.299 * r + 0.587 * g + 0.114 * b;
     }
 
     // Convert RGBA to HEX
