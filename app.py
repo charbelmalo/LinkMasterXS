@@ -283,7 +283,7 @@ def process_tags(tag_strings):
 
 @app.route('/static/<path:filename>')
 def custom_static(filename):
-    return send_from_directory('static', filename0)
+    return send_from_directory('static', filename)
 
 if __name__ == '__main__':
     with app.app_context():
