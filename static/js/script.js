@@ -295,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Navigate to the link after a short delay
                     setTimeout(() => {
                         window.open(shortcut.link, '_blank');
-                    }, 300); // Adjust delay as needed
+                    }, 500); // Adjust delay as needed
                 });
 
                 // Append the linkCard to the article
@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         emojiElement.style.pointerEvents = 'none';
         // emojiElementCont.appendChild(emojiElement);
         document.body.appendChild(emojiElement);
-        let scale = Math.random() * 1 + 0.5;
+        let scale = Math.random() * 1.5;
         let rotation = Math.random() * 360;
         let opacity = 1;
         let velX = (Math.random() - 0.5) * 20;
