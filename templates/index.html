@@ -81,7 +81,9 @@
                             <span class="flex ml-4"><span class="contents"><div class="inline-flex cursor-pointer select-none items-center overflow-hidden font-mono text-xs flex-shrink-0 mr-2 rounded-lg border leading-none dark:bg-gray-900
                                 border-green-100 
                                 text-green-700 dark:text-green-500">
-                                <div class="inline-flex items-center px-2 py-[0.32rem] dark:bg-gray-900  border-green-100 bg-green-50 hover:bg-green-100/70 hover:text-green-800 dark:hover:text-green-400">
+                                <div class="inline-flex items-center px-2 py-[0.32rem] dark:bg-gray-900  border-green-100 bg-green-50 hover:bg-green-900/50 hover:text-green-800 dark:hover:text-green-400 transition-all 200-ms">
+                                    
+                                    
                                     <svg class="h-2.5 w-2.5 mr-1.5 animate-spin-slow-reversed" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" role="img" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 15 15"><path d="M7.48877 6.75C7.29015 6.75 7.09967 6.82902 6.95923 6.96967C6.81879 7.11032 6.73989 7.30109 6.73989 7.5C6.73989 7.69891 6.81879 7.88968 6.95923 8.03033C7.09967 8.17098 7.29015 8.25 7.48877 8.25C7.68738 8.25 7.87786 8.17098 8.0183 8.03033C8.15874 7.88968 8.23764 7.69891 8.23764 7.5C8.23764 7.30109 8.15874 7.11032 8.0183 6.96967C7.87786 6.82902 7.68738 6.75 7.48877 6.75ZM7.8632 0C11.2331 0 11.3155 2.6775 9.54818 3.5625C8.80679 3.93 8.47728 4.7175 8.335 5.415C8.69446 5.565 9.00899 5.7975 9.24863 6.0975C12.0195 4.5975 15 5.19 15 7.875C15 11.25 12.3265 11.325 11.4428 9.5475C11.0684 8.805 10.2746 8.475 9.57813 8.3325C9.42836 8.6925 9.19621 9 8.89665 9.255C10.3869 12.0225 9.79531 15 7.11433 15C3.74438 15 3.67698 12.315 5.44433 11.43C6.17823 11.0625 6.50774 10.2825 6.65751 9.5925C6.29056 9.4425 5.96855 9.2025 5.72891 8.9025C2.96555 10.3875 0 9.8025 0 7.125C0 3.75 2.666 3.6675 3.54967 5.445C3.92411 6.1875 4.71043 6.51 5.40689 6.6525C5.54918 6.2925 5.78882 5.9775 6.09586 5.7375C4.60559 2.97 5.1972 0 7.8632 0Z" fill="currentColor"></path></svg> Running <span class="mx-1">on</span> <span class="-skew-x-6 truncate font-bold uppercase">L40S</span></div> </div></span> </span>
                         </a>
                         <p class="text-gray-500 sm:text-md lg:text-md">Manage Thousand of Website URLs the easy way!</p>
@@ -114,12 +116,12 @@
                                 </svg>
                                 <span>Sort:</span> <span id="selectedSort" class="ml-1">Recently Created</span>
                             </button>
-                            <div id="sortDropdown" class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg hidden z-10">
+                            <div id="sortDropdown" class="absolute top-10 left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg hidden z-10">
                                 <div class="py-1">
-                                    <a href="#" class="sort-option block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" data-value="date_added">Recently Created</a>
-                                    <a href="#" class="sort-option block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" data-value="date_updated">Recently Updated</a>
-                                    <a href="#" class="sort-option block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" data-value="alphabetical">Alphabetical</a>
-                                    <a href="#" class="sort-option block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700" data-value="score">Score</a>
+                                    <a href="#" class="sort-option block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-900" data-value="date_added">Recently Created</a>
+                                    <a href="#" class="sort-option block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-900" data-value="date_updated">Recently Updated</a>
+                                    <a href="#" class="sort-option block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-900" data-value="alphabetical">Alphabetical</a>
+                                    <a href="#" class="sort-option block px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-900" data-value="score">Score</a>
                                 </div>
                             </div>
                         </div>
@@ -142,8 +144,49 @@
                     </div>
                 </div>
             </div>
-            <div id="linksGrid" class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-3 xl:grid-cols-4 py-4 px-5 border-gray-100  dark:border-gray-600">
-                <article class="hidden transition-all duration-200 opacity-1"><a href="http://127.0.0.1:5000/" target="_blank" aria-label="Visit Test" class="link-card luminancepos relative z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden brightness-120 transition-all duration-200 h-40 rounded-lg" style="background-image: linear-gradient(to right bottom, rgb(88, 104, 223), rgb(0, 87, 6));"><div class="absolute left-0 top-0 h-full w-full bg-gradient-to-br from-black/50 to-black/5"></div><div class="absolute right-16 flex flex-wrap content-start gap-1 overflow-hidden top-3 left-3 text-xs"><div class="inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/10 leading-tight text-white opacity-80 "><div class="inline-flex items-center px-1 py-0 ">Shortcut</div></div></div><div class="absolute flex px-2 items-center rounded-xl top-2.5 right-4 text-xs  py-1 inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20 leading-tight text-white opacity-80 hover:opacity-30"><i class="fa fa-xs fa-star text-white mr-1"></i><span class="text-white font-bold">3.7</span></div><div class="emoji absolute opacity-60 text-6xl mb-1 drop-shadow-xl transition-transform duration-200" style="text-shadow: rgba(0, 0, 0, 0.2) 0px 5px 5px;">🎒</div><h4 class="card-title z-40 overflow-visible p-5 max-w-full truncate text-center font-bold leading-tight  text-white text-xl transition-transform duration-200" style="text-shadow: rgba(0, 0, 0, 0.6) 0px 1px 5px;">Test</h4><div class="absolute bottom-0 right-0 z-40 flex max-w-[93%] items-center"><svg preserveaspectratio="xMidYMid meet" class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15" viewbox="0 0 16 12"><path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0-4.97 1.2-6.51 6.13Z"></path></svg><p class="truncate break-words bg-black/20 py-0.5 pl-2 pr-2 text-[0.78rem] rounded-tl-lg leading-tight text-white">sd</p></div><i class="trash-icon fas fa-trash absolute top-2 right-2 text-gray-500 opacity-0 transition-opacity duration-200"></i></a><header class="mt-1 flex items-center overflow-hidden"><li class="group relative flex items-center whitespace-nowrap"><span class="flex items-center gap-2 text-white dark:text-gray-100 text-xs font-mono mt-1"><img class="w-4 h-4 rounded-sm" src="static/default/favicon.svg"><span>127.0.0.1</span></span></li></header></article>
+            <div id="linksGrid"
+                class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-3 xl:grid-cols-4 py-4 px-5 border-gray-100  dark:border-gray-600">
+                <article class="hidden transition-all duration-200 opacity-1"><a href="http://127.0.0.1:5000/" target="_blank"
+                        aria-label="Visit Test"
+                        class="link-card luminancepos relative z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden brightness-120 transition-all duration-200 h-40 rounded-lg"
+                        style="background-image: linear-gradient(to right bottom, rgb(88, 104, 223), rgb(0, 87, 6));">
+                        <div class="absolute left-0 top-0 h-full w-full bg-gradient-to-br from-black/50 to-black/5"></div>
+                        <div class="absolute right-16 flex flex-wrap content-start gap-1 overflow-hidden top-3 left-3 text-xs">
+                            <div
+                                class="inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/10 leading-tight text-white opacity-80 ">
+                                <div class="inline-flex items-center px-1 py-0 ">Shortcut</div>
+                            </div>
+                        </div>
+                        <div
+                            class="absolute flex px-2 items-center rounded-xl top-2.5 right-4 text-xs  py-1 inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20 leading-tight text-white opacity-80 hover:opacity-30">
+                            <i class="fa fa-xs fa-star text-white mr-1"></i><span class="text-white font-bold">3.7</span></div>
+                            <div class="">
+                                <div class="emoji absolute opacity-60 text-6xl mb-1 transition-transform duration-200"
+                            style="text-shadow: rgba(0, 0, 0, 0.2) 0px 5px 5px;">🎒</div>
+                            <div class="emoji absolute opacity-100 blur-100 text-6xl mb-1 transition-transform duration-200"
+                            style="text-shadow: rgba(0, 0, 0, 0.2) 0px 5px 5px;">🎒</div>
+                            </div>
+                        <h4 class="card-title z-40 overflow-visible p-5 max-w-full truncate text-center font-bold leading-tight  text-white text-xl transition-transform duration-200"
+                            style="text-shadow: rgba(0, 0, 0, 0.6) 0px 1px 5px;">Test</h4>
+                        <div class="absolute bottom-0 right-0 z-40 flex max-w-[93%] items-center"><svg
+                                preserveaspectratio="xMidYMid meet"
+                                class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15"
+                                viewbox="0 0 16 12">
+                                <path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0-4.97 1.2-6.51 6.13Z">
+                                </path>
+                            </svg>
+                            <p
+                                class="truncate break-words bg-black/20 py-0.5 pl-2 pr-2 text-[0.78rem] rounded-tl-lg leading-tight text-white">
+                                sd</p>
+                        </div><i
+                            class="trash-icon fas fa-trash absolute top-2 right-2 text-gray-500 opacity-0 transition-opacity duration-200"></i>
+                    </a>
+                    <header class="mt-1 flex items-center overflow-hidden">
+                        <li class="group relative flex items-center whitespace-nowrap"><span
+                                class="flex items-center gap-2 text-white dark:text-gray-100 text-xs font-mono mt-1"><img
+                                    class="w-4 h-4 rounded-sm" src="static/default/favicon.svg"><span>127.0.0.1</span></span></li>
+                    </header>
+                </article>
             </div>
         </div>
         <div id="modal-container" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

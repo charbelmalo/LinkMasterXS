@@ -134,15 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Add gradient overlay
                 const gradientOverlay = document.createElement('div');
-                gradientOverlay.className = 'absolute left-0 top-0 h-full w-full bg-gradient-to-br from-black/50 to-black/5';
+                gradientOverlay.className = averageLuminance < 0.9 ?  'absolute left-0 top-0 h-full w-full  bg-gradient-to-br from-white/10 to-black/10' : 'absolute left-0 top-0 h-full w-full  bg-gradient-to-b from-white/10 to-black/50';
                 linkCard.appendChild(gradientOverlay);
 
                
                 // Status badge (e.g., "Shortcut")
                 const statusBadgeContainer = document.createElement('div');
-                statusBadgeContainer.className = 'absolute hidden right-16 flex flex-wrap content-start gap-1 overflow-hidden top-3 left-3 text-xs';
+                statusBadgeContainer.className = 'absolute hidden opacity-0 right-16 flex flex-wrap content-start gap-1 overflow-hidden top-3 left-3 text-xs  transition-opacity duration-200';
                 const statusBadge = document.createElement('div');
-                statusBadge.className = `inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/10 leading-tight ${textColor} opacity-80`;
+                statusBadge.className = `inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20 leading-tight text-white opacity-80`;
                 const statusBadgeContent = document.createElement('div');
                 statusBadgeContent.className = 'inline-flex items-center px-1 py-0 ';
                 statusBadgeContent.textContent = 'Shortcut';
@@ -150,60 +150,80 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusBadgeContainer.appendChild(statusBadge);
                 linkCard.appendChild(statusBadgeContainer);
 
-                // Icon and count container (e.g., score)
+                const iconContainer = document.createElement('div');
+                iconContainer.className = 'absolute hidden opacity-0 flex px-1 items-center rounded-xl top-2.5 right-4 text-xs  cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20  text-white  transition-opacity duration-200';
+                    // Icon and count container (e.g., score)
                 if (shortcut.score !== undefined && shortcut.score !== null && shortcut.score !== 0) {
-                    const iconContainer = document.createElement('div');
-                    iconContainer.className = 'absolute hidden flex px-2 items-center rounded-xl top-2.5 right-4 text-xs  py-1 inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20 leading-tight text-white opacity-60';
                     const icon = document.createElement('i');
                     icon.className = 'fa fa-xs fa-star text-white mr-1';
                     iconContainer.appendChild(icon);
 
                     const countSpan = document.createElement('span');
-                    countSpan.className = 'text-white font-bold';
+                    countSpan.className = 'text-white font-bold text-xs ';
                     countSpan.textContent = shortcut.score;
                     iconContainer.appendChild(countSpan);
                     linkCard.appendChild(iconContainer);
                 }
 
-                // Emoji overlay
-                const emojiDiv = document.createElement('div');
-                emojiDiv.className = 'emoji absolute opacity-60 text-6xl mb-1 drop-shadow-xl transition-transform duration-200';
-                emojiDiv.style.textShadow = '0px 5px 5px rgba(0, 0, 0, 0.2)';
-                emojiDiv.textContent = shortcut.emojis || '🔗';
-                linkCard.appendChild(emojiDiv);
+                // Emoji overlay container
+                const emojiContainer = document.createElement('div');
+                emojiContainer.className = 'absolute text-center flex items-center justify-center -mt-1 opacity-80 transition-opacity duration-200';
+                emojiContainer.style.height = '60px';
+                emojiContainer.style.width = '-webkit-fill-available';
+
+                // Blurred emoji background
+                const blurContainer = document.createElement('div');
+                blurContainer.style.position = 'absolute';
+                blurContainer.style.height = '0';
+                blurContainer.style.width = '0px';
+
+                const blurredEmoji = document.createElement('div');
+                blurredEmoji.className = 'emoji inline absolute opacity-100 blur-100 text-6xl mb-1 transition-transform duration-200';
+                blurredEmoji.style.mixBlendMode = 'normal';
+                blurredEmoji.style.filter = 'blur(35px)';
+                blurredEmoji.textContent = shortcut.emojis || '🔗';
+                blurContainer.appendChild(blurredEmoji);
+
+                // Main emoji
+                const emojiSpan = document.createElement('div');
+                emojiSpan.className = 'emoji  inline absolute opacity-100 text-6xl mb-1 transition-transform duration-200';
+                emojiSpan.textContent = shortcut.emojis || '🔗';
+
+                // Assemble the structure
+                emojiContainer.appendChild(blurredEmoji);
+                emojiContainer.appendChild(emojiSpan);
+                linkCard.appendChild(emojiContainer);
 
                 // Card Title (name)
                 const nameDiv = document.createElement('h4');
-                nameDiv.className = `card-title z-40 overflow-visible p-5 max-w-full truncate text-center font-bold leading-tight  ${textColor} text-xl transition-transform duration-200`;
-                nameDiv.style.textShadow = '0px 1px 5px rgba(0, 0, 0, 0.6)';
+                nameDiv.className = `card-title z-40 overflow-visible p-5 max-w-full mt-1 truncate text-center font-bold leading-tight  ${textColor} text-2xl transition-transform duration-200`;
+                nameDiv.style.textShadow = '0px 1px 2px rgba(0, 0, 0, 0.25)';
                 nameDiv.textContent = shortcut.name;
                 linkCard.appendChild(nameDiv);
 
                 // Short description (if present)
                 if (shortcut.short_description) {
                     const descriptionDiv = document.createElement('div');
-                    descriptionDiv.className = 'absolute bottom-0 right-0 z-40 flex max-w-[93%] items-center';
-                    const svgOverlay = document.createElement('svg');
-                    svgOverlay.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-                    svgOverlay.className = 'pointer-events-none absolute left-0 h-full -translate-x-full text-black/15';
-                    svgOverlay.setAttribute('viewBox', '0 0 16 12');
-                    const svgPath = document.createElement('path');
-                    svgPath.setAttribute('fill', 'currentColor');
-                    svgPath.setAttribute('d', 'M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0-4.97 1.2-6.51 6.13Z');
-                    svgOverlay.appendChild(svgPath);
-                    descriptionDiv.appendChild(svgOverlay);
-
+                   
+                    const svgDecor = `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15" viewBox="0 0 16 12"><path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0-4.97 1.2-6.51 6.13Z"></path></svg>`
+                   
+                    descriptionDiv.innerHTML= svgDecor;
                     const descriptionText = document.createElement('p');
-                    descriptionText.className = `truncate break-words bg-black/20 py-0.5 pl-2 pr-2 text-[0.78rem] rounded-tl-lg transition-all duration-200 leading-tight ${textColor}`;
-                    descriptionText.textContent = shortcut.short_description;
+                    const descriptionSpan = document.createElement('span');
+                    descriptionText.className = `bg-black/15 transition-all duration-200 leading-tight `;
+                    descriptionSpan.className = `truncate break-words py-0.5 pr-2 text-[0.78rem] -ml-1 ${textColor}`;
+                    descriptionSpan.textContent = shortcut.short_description;
+                    descriptionText.appendChild(descriptionSpan);
                     descriptionDiv.appendChild(descriptionText);
 
+                    descriptionDiv.className = 'absolute bottom-0 right-0 z-40 flex max-w-[83%] items-center';
+      
                     linkCard.appendChild(descriptionDiv);
                 }
 
                 // Trash icon for deletion
                 const trashIcon = document.createElement('i');
-                trashIcon.className = 'trash-icon fa fa-solid fa-trash absolute top-2 right-2 text-gray-500 opacity-0 transition-opacity duration-200';
+                trashIcon.className = 'trash-icon fa fa-solid fa-trash absolute top-2 right-2 text-gray-900 opacity-0 transition-opacity duration-200';
                 linkCard.appendChild(trashIcon);
 
                 // Event listener for hover
@@ -211,6 +231,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (isCmdPressed) {
                         trashIcon.classList.remove('opacity-0');
                     }
+                    statusBadgeContainer.classList.remove('hidden');
+                    iconContainer.classList.remove('hidden');
+                    iconContainer.classList.remove('opacity-0');
+                    statusBadgeContainer.classList.remove('opacity-0');
+                    iconContainer.classList.add('opacity-80');
+                    statusBadgeContainer.classList.add('opacity-100');
+                    emojiContainer.classList.add('opacity-100');
 
                 });
 
@@ -218,6 +245,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (isCmdPressed) {
                         trashIcon.classList.add('opacity-0');
                     }
+                    iconContainer.classList.add('opacity-0');
+                    statusBadgeContainer.classList.add('opacity-0');
+                    iconContainer.classList.remove('opacity-80');
+                    statusBadgeContainer.classList.remove('opacity-100');
+                    emojiContainer.classList.remove('opacity-100');
+                    setTimeout(() => {
+                        statusBadgeContainer.classList.add('hidden');
+                        iconContainer.classList.add('hidden');
+                    }, 200);
                 });
 
                 // Update trash icon visibility on keydown and keyup
@@ -276,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const domainLi = document.createElement('li');
                 domainLi.className = 'group relative flex items-center whitespace-nowrap';
                 const domainSpan = document.createElement('span');
-                domainSpan.className = 'flex items-center gap-2 text-white dark:text-gray-100 text-xs font-mono mt-1';
+                domainSpan.className = 'flex items-center gap-2 text-gray-900 text-xs font-mono mt-1';
 
                 // Create the favicon image
                 const faviconImg = document.createElement('img');
@@ -393,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tagContainer.classList.add('flex', 'flex-shrink-0');
 
             const tagLabel = document.createElement('label');
-            tagLabel.classList.add('flex', 'bg-gradient-to-br','hover:opacity-100' ,'rounded-lg', 'from-gray-600', 'opacity-30','to-black', 'items-center', 'gap-1', 'px-2', 'py-2', 'cursor-pointer', 'transition-all', 'duration-200');
+            tagLabel.classList.add('flex', 'bg-gradient-to-br','hover:opacity-100' ,'rounded-lg', 'from-gray-300','to-transparent', 'items-center', 'gap-1', 'px-2', 'py-2', 'cursor-pointer', 'transition-all', 'duration-200');
            
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -418,8 +454,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 tagLabel.classList.add('bg-gradient-to-br', 'from-blue-500', 'to-blue-900', 'text-white');
                 tagLabel.classList.remove('opacity-30');
             } else {
-                tagLabel.classList.add('bg-gray-200', 'text-gray-100');
-                tagLabel.classList.add('opacity-30');
+                tagLabel.classList.add('dark:from-gray-800', 'dark:text-white');
+                // tagLabel.classList.add('opacity-30');
 
             }
 
@@ -486,7 +522,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Toggle favorite status using the icon
-    favFilterContainer.addEventListener('click', () => {
+    favFilterContainer.addEventListener('click', (e) => {
+
+        e.preventDefault();
         favoritedFirstCheckbox.checked = !favoritedFirstCheckbox.checked;
         if (favoritedFirstCheckbox.checked) {
             favoritedIcon.classList.remove('fa-heart-o', 'text-red-700');
