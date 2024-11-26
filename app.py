@@ -1,40 +1,44 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, flash
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 from sqlalchemy import func
 from datetime import datetime
+import uuid  # For generating shortcut IDs
+from extensions import db  # Import db
+import os
+import json
+import datetime
+import secrets
 import uuid
+# from models import User, Shortcut, Tag
 
 app = Flask(__name__)
 CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shortcuts.db'
-db = SQLAlchemy(app)
+app.secret_key = os.getenv('SECRET_KEY')
+if not app.secret_key:
+    raise ValueError("No SECRET_KEY set for Flask application")
+db.init_app(app)  # Initialize db with app
+
+# Import models after initializing db
+from models import User, Shortcut, Tag
+import os
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'  # Redirect to 'login' view if not authenticated
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# db = SQLAlchemy(app)
 
 shortcut_tags = db.Table('shortcut_tags',
     db.Column('shortcut_id', db.String(36), db.ForeignKey('shortcut.id'), primary_key=True),
     db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True)
 )
-
-class Shortcut(db.Model):
-    id = db.Column(db.String(36), primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    link = db.Column(db.String(500), nullable=False)
-    emojis = db.Column(db.String(100), nullable=True)
-    color_from = db.Column(db.String(20), nullable=False)
-    color_to = db.Column(db.String(20), nullable=False)
-    short_description = db.Column(db.String(500), nullable=True)
-    pinned = db.Column(db.Boolean, default=False)
-    favorited = db.Column(db.Boolean, default=False)
-    score = db.Column(db.Float, default=0.0)
-    date_added = db.Column(db.DateTime, default=datetime.utcnow)
-    date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    tags = db.relationship('Tag', secondary=shortcut_tags, backref=db.backref('shortcuts', lazy='dynamic'))
-
-class Tag(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    parent_id = db.Column(db.Integer, db.ForeignKey('tag.id'))
-    parent = db.relationship('Tag', remote_side=[id], backref='children')
 
 @app.route('/')
 def index():
@@ -43,7 +47,7 @@ def index():
 @app.route('/api/tags', methods=['GET'])
 def get_tags():
     search_query = request.args.get('search', '').lower()
-    tags_query = Tag.query
+    tags_query = Tag.query.filter_by(user_id=current_user.id).all()
 
     if search_query:
         tags_query = tags_query.filter(Tag.name.ilike(f'%{search_query}%'))
@@ -76,6 +80,7 @@ def get_tags():
     return jsonify(tags_tree), 200
 
 @app.route('/api/shortcuts', methods=['GET'])
+@login_required
 def get_shortcuts():
     search_query = request.args.get('search', '').lower()
     sort_by = request.args.get('sort_by', 'date_added')
@@ -116,7 +121,7 @@ def get_shortcuts():
     else:
         shortcuts_query = shortcuts_query.order_by(Shortcut.date_added.desc())
 
-    shortcuts = shortcuts_query.all()
+    shortcuts = Shortcut.query.filter_by(user_id=current_user.id).all()
 
     if favorited_first:
         shortcuts.sort(key=lambda x: x.favorited, reverse=True)
@@ -146,9 +151,10 @@ def get_shortcuts():
     return jsonify(shortcuts_list), 200
 
 @app.route('/api/shortcuts/<shortcut_id>', methods=['PUT'])
+@login_required
 def update_shortcut(shortcut_id):
     data = request.get_json()
-    shortcut = Shortcut.query.get(shortcut_id)
+    shortcut = Shortcut.query.filter_by(id=shortcut_id, user_id=current_user.id).first()
 
     if not shortcut:
         return {'message': 'Shortcut not found'}, 404
@@ -166,9 +172,11 @@ def update_shortcut(shortcut_id):
     return jsonify({'message': 'Shortcut updated successfully'}), 200
 
 @app.route('/api/shortcuts/<shortcut_id>', methods=['DELETE'])
+@login_required
 def delete_shortcut(shortcut_id):
-    shortcut = Shortcut.query.get(shortcut_id)
-
+    # shortcut = Shortcut.query.get(shortcut_id)
+    shortcut = Shortcut.query.filter_by(id=shortcut_id, user_id=current_user.id).first()
+    
     if not shortcut:
         return {'message': 'Shortcut not found'}, 404
 
@@ -178,6 +186,7 @@ def delete_shortcut(shortcut_id):
     return {'message': 'Shortcut deleted'}, 200
 
 @app.route('/api/shortcuts', methods=['POST'])
+@login_required
 def add_shortcut():
     data = request.get_json()
     required_fields = ['name', 'link', 'tags', 'emojis', 'color_from', 'color_to', 'short_description']
@@ -198,6 +207,7 @@ def add_shortcut():
         pinned=data.get('pinned', False),
         favorited=data.get('favorited', False),
         score=float(data.get('score', 0.0)),
+        user_id=current_user.id,
         tags=tags
     )
 
@@ -205,6 +215,55 @@ def add_shortcut():
     db.session.commit()
 
     return jsonify({'message': 'Shortcut added successfully'}), 201
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        user = User.query.filter_by(email=email).first()
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(url_for('index'))
+        else:
+            flash('Invalid email or password')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+
+# def process_tags(tag_strings):
+#     tags = []
+#     for tag_string in tag_strings:
+#         hierarchy = [t.strip() for t in tag_string.split('>') if t.strip()]
+#         parent = None
+#         for tag_name in hierarchy:
+#             tag = Tag.query.filter_by(name=tag_name, parent=parent).first()
+#             if not tag:
+#                 tag = Tag(name=tag_name, parent=parent)
+#                 db.session.add(tag)
+#                 db.session.flush()
+#             parent = tag
+#         tags.append(parent)
+#     return tags
+
 
 def process_tags(tag_strings):
     tags = []
@@ -216,10 +275,11 @@ def process_tags(tag_strings):
             if not tag:
                 tag = Tag(name=tag_name, parent=parent)
                 db.session.add(tag)
-                db.session.flush()
+                db.session.flush()  # Flush to get the ID
             parent = tag
         tags.append(parent)
     return tags
+
 
 @app.route('/static/<path:filename>')
 def custom_static(filename):
