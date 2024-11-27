@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file, redirect, url_for, flash
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
@@ -11,7 +11,11 @@ import json
 import datetime
 import secrets
 import uuid
+import requests
+from io import BytesIO
 # from models import User, Shortcut, Tag
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -43,6 +47,37 @@ shortcut_tags = db.Table('shortcut_tags',
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/get_favicon')
+def get_favicon():
+    domain = request.args.get('domain')
+    theme = request.args.get('theme', 'light')
+    favicon_paths_dark = [
+        '/favicon-dark.svg',
+        '/favicon-dark.ico',
+        '/favicon-dark.png',
+        '/favicons/favicon-dark.svg',
+        '/favicons/favicon-dark.png',
+        '/favicon.ico',
+    ]
+    favicon_paths_light = [
+        '/favicon.svg',
+        '/favicon.ico',
+        '/favicon.png',
+        '/favicons/favicon.svg',
+        '/favicons/favicon.png',
+        '/favicon.ico',
+    ]
+    paths = favicon_paths_dark if theme == 'dark' else favicon_paths_light
+    for path in paths:
+        url = f"https://{domain}{path}"
+        try:
+            response = requests.get(url, timeout=2)
+            if response.status_code == 200:
+                return send_file(BytesIO(response.content), mimetype=response.headers.get('Content-Type', 'image/x-icon'))
+        except requests.RequestException:
+            continue
+    return send_from_directory('static/default', 'favicon.png')
 
 @app.route('/api/tags', methods=['GET'])
 def get_tags():

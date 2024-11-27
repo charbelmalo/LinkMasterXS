@@ -1,0 +1,30 @@
+
+  .skeleton-loading {
+    background: linear-gradient(
+      80.94deg,
+      rgba(255, 255, 255, 0.05) 8.87%,
+      rgba(255, 255, 255, 0.15) 11.98%,
+      rgba(255, 255, 255, 0.3) 18.21%,
+      rgba(255, 255, 255, 0.15) 23.92%,
+      rgba(255, 255, 255, 0.05) 29.11%,
+      rgba(255, 255, 255, 0.05) 47.79%,
+      rgba(255, 255, 255, 0.15) 55.06%,
+      rgba(255, 255, 255, 0.3) 60.77%,
+      rgba(255, 255, 255, 0.15) 66.99%,
+      rgba(255, 255, 255, 0.05) 74.26%
+    ), rgba(214, 224, 236, 0.3);
+    background-size: 700% 100%;
+    background-position: 0% 0;
+    background-blend-mode: luminosity;
+    animation: skeleton 5s linear infinite;
+  }
+
+  @keyframes skeleton {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
+  }
+  

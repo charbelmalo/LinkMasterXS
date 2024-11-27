@@ -16,25 +16,44 @@
     <meta name="twitter:description" content="Manage and organize your favorite links efficiently.">
     <meta name="twitter:image" content="{{ url_for('static', filename='default/Xvault.png') }}">
     <link rel="icon" href="{{ url_for('static', filename='default/favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='/css/utils.css') }}"></link>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script> module.exports = {
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp,container-queries"></script>
+
+    <script> 
+    /** @type {import('tailwindcss').Config} */
+    tailwind.config = {
         darkMode: 'class',
         theme: {
             extend: {
                 colors: {
                     customBlue: '#6366F1',
-                    customGreen: '#10B981',
+                    customGreen: '#ffffff',
                 },
                 transitionDuration: {
                     '300': '300ms',
                 },
+                height: {
+                 '54': '14rem',
+                }
             },
         },
         variants: {
-            extend: {},
-        },
+            extend: {
+      keyframes: {
+        skeleton: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' },
+            },
+      },
+      animation: {
+        skeleton: 'skeleton 1.5s infinite linear',
+      },
+    },},
+        
         plugins: [],
-    };</script>
+    };
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='font-awesome/css/font-awesome.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script>
@@ -51,8 +70,8 @@
     <style>
     </style>
 </head>
-<body class="flex flex-col bg-white bg-gradient-to-br from-indigo-950 dark:from-indigo-950 to-gray-950 text-black">
-    <header class="border-b border-gray-100  dark:border-gray-800">
+<body class="flex flex-col bg-white bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-950/20 dark:to-gray-950 text-base">
+    <header class="border-b border-gray-100  dark:border-gray-800 bg-gradient-to-tr from-indigo-950 dark:from-indigo-950/20 dark:to-gray-950">
         <div class="container flex h-16 items-center px-5">
             <div class="flex flex-1 items-center">
                 <a href="{{ url_for('index') }}" class="flex items-center mr-5 lg:mr-6">
@@ -61,12 +80,12 @@
             </div>
             <nav class="ml-auto hidden lg:block">
                 <ul class="flex items-center space-x-1.5 2xl:space-x-2">
-                    <li class="text-gray-900 dark:text-white  hover:text-indigo-700">
-                        <a href="toolkits.html" class="group flex items-center px-2 py-0.5 text-indigo-100 dark:hover:text-gray-400" aria-label="Toolkits"> <svg class="mr-1.5 text-gray-400 group-hover:text-indigo-500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" role="img" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><path class="uim-quaternary" d="M20.23 7.24L12 12L3.77 7.24a1.98 1.98 0 0 1 .7-.71L11 2.76c.62-.35 1.38-.35 2 0l6.53 3.77c.29.173.531.418.7.71z" opacity=".25" fill="currentColor"></path><path class="uim-tertiary" d="M12 12v9.5a2.09 2.09 0 0 1-.91-.21L4.5 17.48a2.003 2.003 0 0 1-1-1.73v-7.5a2.06 2.06 0 0 1 .27-1.01L12 12z" opacity=".5" fill="currentColor"></path><path class="uim-primary" d="M20.5 8.25v7.5a2.003 2.003 0 0 1-1 1.73l-6.62 3.82c-.275.13-.576.198-.88.2V12l8.23-4.76c.175.308.268.656.27 1.01z" fill="currentColor"></path></svg>
+                    <li class="text-indigo-900 dark:text-white  hover:text-indigo-700">
+                        <a href="toolkits.html" class="group flex items-center px-2 py-0.5 text-indigo-950 hover:text-indigo-700 dark:text-indigo-100 dark:hover:text-indigo-400 transition-all duration-200" aria-label="Toolkits"> <svg class="mr-1.5 text-indigo-950 group-hover:text-indigo-500  transition-all duration-200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" role="img" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><path class="uim-quaternary" d="M20.23 7.24L12 12L3.77 7.24a1.98 1.98 0 0 1 .7-.71L11 2.76c.62-.35 1.38-.35 2 0l6.53 3.77c.29.173.531.418.7.71z" opacity=".25" fill="currentColor"></path><path class="uim-tertiary" d="M12 12v9.5a2.09 2.09 0 0 1-.91-.21L4.5 17.48a2.003 2.003 0 0 1-1-1.73v-7.5a2.06 2.06 0 0 1 .27-1.01L12 12z" opacity=".5" fill="currentColor"></path><path class="uim-primary" d="M20.5 8.25v7.5a2.003 2.003 0 0 1-1 1.73l-6.62 3.82c-.275.13-.576.198-.88.2V12l8.23-4.76c.175.308.268.656.27 1.01z" fill="currentColor"></path></svg>
                             Toolkits</a>
                     </li>
                     <li class="text-gray-900 dark:text-white  hover:text-indigo-700">
-                        <a href="links.html" class="group flex items-center px-2 py-0.5 dark:hover:text-gray-400" aria-label="Links">Links</a>
+                        <a href="links.html" class="group flex items-center px-2 py-0.5 dark:hover:text-gray-400" aria-label="Links">LinkMasterXS</a>
                     </li>
                     <!-- index.html -->
                     {% if current_user.is_authenticated %}
@@ -85,20 +104,18 @@
             <div class="py-6 lg:pt-10 lg:pb-7">
                 <div class="flex flex-col justify-between lg:flex-row lg:items-end">
                     <div class="pb-1 lg:pb-0 r px-5">
-                        <a href="/spaces" class="group flex items-center mb-0.5 pl-1 text-4xl font-black -ml-1.5 dark:pl-1.5">
-                            <h1 class="text-gray-900 dark:text-white  group-hover:text-gray-700 dark:group-hover:text-gray-100">LinkMaster XS  </h1>
-                            <span class="flex ml-4"><span class="contents"><div class="inline-flex cursor-pointer select-none items-center overflow-hidden font-mono text-xs flex-shrink-0 mr-2 rounded-lg border leading-none dark:bg-gray-900
-                                border-green-100 
-                                text-green-700 dark:text-green-500">
-                                <div class="inline-flex items-center px-2 py-[0.32rem] dark:bg-gray-900  border-green-100 bg-green-50 hover:bg-green-900/50 hover:text-green-800 dark:hover:text-green-400 transition-all 200-ms">
+                        <a href="/spaces" class="group flex items-center mb-0.5 pl-1 text-4xl font-black -ml-1.5 dark:pl-1.5 transition-all duration-200">
+                            <h1 class="text-indigo-950 dark:text-white  group-hover:text-gray-700 dark:group-hover:text-gray-100">LinkMaster XS  </h1>
+                            <span class="flex ml-4"><span class="contents"><div class="inline-flex cursor-pointer select-none items-center overflow-hidden font-mono text-xs flex-shrink-0 mr-2 rounded-lg leading-none dark:bg-gray-900 border dark:border-1 border-indigo-300 dark:border-indigo-400 text-indigo-700 dark:text-indigo-300 ">
+                                <div class="inline-flex items-center px-2 py-[0.32rem] bg-gradient-to-br dark:from-indigo-950 dark:to-indigo-900  hover:bg-indigo-900/50 hover:text-indigo-800 dark:hover:text-indigo-400 transition-all 200-ms ">
                                     
                                     
                                     <svg class="h-2.5 w-2.5 mr-1.5 animate-spin-slow-reversed" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" role="img" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 15 15"><path d="M7.48877 6.75C7.29015 6.75 7.09967 6.82902 6.95923 6.96967C6.81879 7.11032 6.73989 7.30109 6.73989 7.5C6.73989 7.69891 6.81879 7.88968 6.95923 8.03033C7.09967 8.17098 7.29015 8.25 7.48877 8.25C7.68738 8.25 7.87786 8.17098 8.0183 8.03033C8.15874 7.88968 8.23764 7.69891 8.23764 7.5C8.23764 7.30109 8.15874 7.11032 8.0183 6.96967C7.87786 6.82902 7.68738 6.75 7.48877 6.75ZM7.8632 0C11.2331 0 11.3155 2.6775 9.54818 3.5625C8.80679 3.93 8.47728 4.7175 8.335 5.415C8.69446 5.565 9.00899 5.7975 9.24863 6.0975C12.0195 4.5975 15 5.19 15 7.875C15 11.25 12.3265 11.325 11.4428 9.5475C11.0684 8.805 10.2746 8.475 9.57813 8.3325C9.42836 8.6925 9.19621 9 8.89665 9.255C10.3869 12.0225 9.79531 15 7.11433 15C3.74438 15 3.67698 12.315 5.44433 11.43C6.17823 11.0625 6.50774 10.2825 6.65751 9.5925C6.29056 9.4425 5.96855 9.2025 5.72891 8.9025C2.96555 10.3875 0 9.8025 0 7.125C0 3.75 2.666 3.6675 3.54967 5.445C3.92411 6.1875 4.71043 6.51 5.40689 6.6525C5.54918 6.2925 5.78882 5.9775 6.09586 5.7375C4.60559 2.97 5.1972 0 7.8632 0Z" fill="currentColor"></path></svg> Running <span class="mx-1">on</span> <span class="-skew-x-6 truncate font-bold uppercase">L40S</span></div> </div></span> </span>
                         </a>
-                        <p class="text-gray-500 sm:text-md lg:text-md">Manage Thousand of Website URLs the easy way!</p>
+                        <p class=" text-indigo-900 dark:text-indigo-300 sm:text-md lg:text-md">Manage Thousand of Website URLs the easy way!</p>
                     </div>
                     <div class="flex px-5">
-                        <button id="addLinkBtn" class=" mr-3 rounded-full lg:h-9 lg:px-3.5 text-gray-900 dark:text-white bg-gradient-to-br border-2 border-green-600/40 dark:border-green-600/40 hover:border-green-600 dark:hover:border-green-600 dark:from-green-900 transition-all-200" aria-label="Add New Link">Add New Link</button>
+                        <button id="addLinkBtn" class="inline-flex items-center px-2 py-[0.32rem] dark:bg-green-900 rounded text-sm border-green-100 bg-green-50 hover:bg-green-900/50 hover:text-green-800 dark:hover:text-green-400 transition-all 200-ms" aria-label="Add New Link">Add New Link</button>
                         <div class="flex items-center text-sm text-gray-400">
                             or
                             <a class="ml-2 flex items-center gap-0.5 underline" href="/spaces/launch">
@@ -136,12 +153,12 @@
                         </div>
                     </div>
                     <input id="sortSelect" type="text" class="hidden absolute mt-2" value="date_added">
-                    <div id="favoritedFilterContainer" class=" inline-flex items-center transition-all duration-100 py-2 px-4 text-gray-900 md:text-lg bg-gradient-to-t from-red-900 to-white dark:from-red-900/30 dark:to-red-900/10 dark:hover:from-red-900/70 dark:hover:to-red-900/20 rounded-md ">
-                        <label class="flex items-center ml-0">
+                    <div id="favoritedFilterContainer" class="cursor-pointer inline-flex items-center transition-all duration-100 py-2 px-4 text-indigo-900 md:text-lg bg-gradient-to-t from-red-900 to-white dark:from-indigo-950 dark:to-indigo-900/50 dark:hover:to-indigo-700 rounded-md transition-all duration-200">
+                        <label class="flex items-center ml-0 cursor-pointer ">
                             <input type="checkbox" id="favoritedFirst" class="hidden">
-                            <span class="text-sm flex items-center">
-                                <i class="fa fa-heart-o text-red-700 dark:text-gray-100" id="favoritedIcon"></i>
-                                <span id="favoritedText" class="ml-2 font-mono text-gray-900 dark:text-white">Favorited First</span>
+                            <span class="text-sm flex items-center cursor-pointer ">
+                                <i class="fa fa-heart-o text-indigo-700 dark:text-gray-100 font-bold " id="favoritedIcon"></i>
+                                <span id="favoritedText" class="ml-2 text-xs font-mono text-indigo-100/66 dark:text-indigo-100/90 ">Favorited First</span>
                             </span>
                         </label>
                     </div>
@@ -154,7 +171,7 @@
                 </div>
             </div>
             <div id="linksGrid"
-                class="grid grid-cols-1 gap-x-4 gap-y-6 md:grid-cols-3 xl:grid-cols-4 py-4 px-5 border-gray-100  dark:border-gray-600">
+                class="grid grid-cols-1 gap-x-5 gap-y-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 py-4 px-5 border-gray-100  dark:border-gray-600">
                 <article class="hidden transition-all duration-200 opacity-1"><a href="http://127.0.0.1:5000/" target="_blank"
                         aria-label="Visit Test"
                         class="link-card luminancepos relative z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden brightness-120 transition-all duration-200 h-40 rounded-lg"

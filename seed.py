@@ -4,6 +4,8 @@ import uuid
 import datetime
 from models import User, Shortcut, Tag
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 def seed_database():
     # Define the test user credentials

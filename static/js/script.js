@@ -122,19 +122,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const averageLuminance = calculateAverageLuminance(shortcut.color_from, shortcut.color_to);
                 const textColor = 'text-white';
                 const overlayStrength = averageLuminance > 0.5 ? 'luminanceneg' : 'luminancepos' ;
-                article.className = 'transition-all duration-200 opacity-1';
+                article.className = 'transition-all duration-200 opacity-1 ';
 
                 // Create the link card container
                 const linkCard = document.createElement('a');
                 linkCard.href = shortcut.link;
                 linkCard.target = '_blank';
                 linkCard.setAttribute('aria-label', 'Visit ' + shortcut.name);
-                linkCard.className = `link-card ${overlayStrength} relative z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden brightness-120 transition-all duration-200 h-40 rounded-lg`;
+                linkCard.className = `link-card ${overlayStrength} relative h-48 z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden brightness-120 transition-all duration-200 h-40 rounded-lg`;
                 linkCard.style.backgroundImage = `linear-gradient(to bottom right, ${shortcut.color_from}, ${shortcut.color_to})`;
 
                 // Add gradient overlay
                 const gradientOverlay = document.createElement('div');
-                gradientOverlay.className = averageLuminance < 0.9 ?  'absolute left-0 top-0 h-full w-full  bg-gradient-to-br from-white/10 to-black/10' : 'absolute left-0 top-0 h-full w-full  bg-gradient-to-b from-white/10 to-black/50';
+                gradientOverlay.className = averageLuminance < 0.9 ?  'absolute left-0 top-0 h-full w-full dark:highlight-white  bg-gradient-to-br from-white/10 to-black/10' : 'absolute left-0 top-0 h-full w-full  bg-gradient-to-b from-white/10 to-black/50';
                 linkCard.appendChild(gradientOverlay);
 
                
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Emoji overlay container
                 const emojiContainer = document.createElement('div');
-                emojiContainer.className = 'absolute text-center flex items-center justify-center -mt-1 opacity-80 transition-opacity duration-200';
+                emojiContainer.className = 'absolute text-center flex items-center justify-center -mt-1 opacity-50  transition-opacity duration-200';
                 emojiContainer.style.height = '60px';
                 emojiContainer.style.width = '-webkit-fill-available';
 
@@ -186,7 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Main emoji
                 const emojiSpan = document.createElement('div');
-                emojiSpan.className = 'emoji  inline absolute opacity-100 text-6xl mb-1 transition-transform duration-200';
+                emojiSpan.className = 'emoji  inline absolute text-7xl mb-1 transition-transform duration-200';
+          
                 emojiSpan.textContent = shortcut.emojis || '🔗';
 
                 // Assemble the structure
@@ -196,8 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Card Title (name)
                 const nameDiv = document.createElement('h4');
-                nameDiv.className = `card-title z-40 overflow-visible p-5 max-w-full mt-1 truncate text-center font-bold leading-tight  ${textColor} text-2xl transition-transform duration-200`;
-                nameDiv.style.textShadow = '0px 1px 2px rgba(0, 0, 0, 0.25)';
+                nameDiv.className = `card-title z-40 overflow-visible p-5 py-8 max-w-full truncate text-center font-bold  ${textColor} text-2xl transition-transform duration-200`;
+                nameDiv.style.textShadow = '0px 3px 40px rgba(0, 0, 0, 0.8)';
                 nameDiv.textContent = shortcut.name;
                 linkCard.appendChild(nameDiv);
 
@@ -211,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const descriptionText = document.createElement('p');
                     const descriptionSpan = document.createElement('span');
                     descriptionText.className = `bg-black/15 transition-all duration-200 leading-tight `;
-                    descriptionSpan.className = `truncate break-words py-0.5 pr-2 text-[0.78rem] -ml-1 ${textColor}`;
+                    descriptionSpan.className = `truncate break-words py-0.5  text-gray-200/70 pr-2 text-[0.78rem] -ml-1 ${textColor}`;
                     descriptionSpan.textContent = shortcut.short_description;
                     descriptionText.appendChild(descriptionSpan);
                     descriptionDiv.appendChild(descriptionText);
@@ -222,22 +223,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Trash icon for deletion
+                const ActionIconsWR = document.createElement('span');
                 const trashIcon = document.createElement('i');
-                trashIcon.className = 'trash-icon fa fa-solid fa-trash absolute top-2 right-2 text-gray-900 opacity-0 transition-opacity duration-200';
-                linkCard.appendChild(trashIcon);
+                const editIcon = document.createElement('i');
+                ActionIconsWR.classList.add('action-items-container', 'absolute', 'bottom-2', 'left-2', 'opacity-0', 'transition-opacity', 'text-lg', 'duration-200');
+                trashIcon.className = 'trash-icon  fa fa-solid  fa-trash  text-indigo-100/60 cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                editIcon.className = 'ml-2 edit-icon  fa fa-solid  fa-pencil  text-indigo-100/60 cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                
+                ActionIconsWR.appendChild(trashIcon);
+                ActionIconsWR.appendChild(editIcon);
+                
+
+                linkCard.appendChild(ActionIconsWR);
 
                 // Event listener for hover
                 linkCard.addEventListener('mouseenter', () => {
                     if (isCmdPressed) {
-                        trashIcon.classList.remove('opacity-0');
+                        ActionIconsWR.classList.remove('opacity-0');
                     }
                     statusBadgeContainer.classList.remove('hidden');
                     iconContainer.classList.remove('hidden');
                     iconContainer.classList.remove('opacity-0');
                     statusBadgeContainer.classList.remove('opacity-0');
+                    descriptionSpan.classList.remove('text-gray-200/70');
+                    descriptionSpan.classList.add('text-gray-200');
+                    
                     iconContainer.classList.add('opacity-80');
                     statusBadgeContainer.classList.add('opacity-100');
                     emojiContainer.classList.add('opacity-100');
+                    emojiSpan.classList.remove('opacity-40');
+                    emojiSpan.classList.add('opacity-100');
 
                 });
 
@@ -249,6 +264,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusBadgeContainer.classList.add('opacity-0');
                     iconContainer.classList.remove('opacity-80');
                     statusBadgeContainer.classList.remove('opacity-100');
+                    descriptionSpan.classList.add('text-gray-200/70');
+                    descriptionSpan.classList.remove('text-gray-200');
                     emojiContainer.classList.remove('opacity-100');
                     setTimeout(() => {
                         statusBadgeContainer.classList.add('hidden');
@@ -262,6 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         isCmdPressed = true;
                         if (linkCard.matches(':hover')) {
                             trashIcon.classList.remove('opacity-0');
+                            editIcon.classList.remove('opacity-0');
                         }
                     }
                 });
@@ -270,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!e.metaKey && !e.ctrlKey) {
                         isCmdPressed = false;
                         trashIcon.classList.add('opacity-0');
+                        editIcon.classList.add('opacity-0');
                     }
                 });
 
@@ -294,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     // Navigate to the link after a short delay
                     setTimeout(() => {
-                        window.open(shortcut.link, '_blank');
+                        // window.open(shortcut.link, '_blank');
                     }, 500); // Adjust delay as needed
                 });
 
@@ -312,33 +331,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 const domainLi = document.createElement('li');
                 domainLi.className = 'group relative flex items-center whitespace-nowrap';
                 const domainSpan = document.createElement('span');
-                domainSpan.className = 'flex items-center gap-2 text-gray-900 text-xs font-mono mt-1';
+                domainSpan.className = 'flex items-center gap-1 text-indigo-900 dark:text-blue-50 text-xs font-mono mt-1';
+                const favIconWrapper = document.createElement('span');
+                favIconWrapper.className = ' rounded m-1';
+                // Create the favicon image
+                
+              
+
+
 
                 // Create the favicon image
                 const faviconImg = document.createElement('img');
-                faviconImg.onload = function() {
-                    const favLuminance = getImageLuminance(faviconImg);
-                    console.log*('loaded ${domain} favicon with luminance ${favLuminance}');
-                    if (favLuminance < 0.2) {
-                        faviconImg.classList.remove = 'dark:from-gray-900','to-transparent';
-                        faviconImg.classList.add = 'dark:from-gray-100','dark:to-white';
-                    } else {
-                        faviconImg.style.backgroundColor = 'white';
-                    }
-                };
-                faviconImg.src = `https://${encodeURIComponent(domain)}/favicon.ico`;
-                faviconImg.className = 'w-6 h-6 rounded-md bg-gradient-to-tr from-gray-300 dark:from-gray-900 to-transparent hover:to-gray-700 p-1';
-               
-                // Handle image loading errors by providing a fallback icon
-                faviconImg.onerror = () => {
-                    faviconImg.src = 'static/default/favicon.svg';
-                };
+                faviconImg.classList.add(
+                    'w-5',
+                    'h-5',
+                    'p-0.5',
+                    'bg-gray-300',
+                    'dark:bg-gray-700',
+                    'rounded',
+                    'skeleton-loading',
+                    // 'bg-[length:200px_100%]',
+                    // 'bg-left'
+                );
+
+                 // Handle image loading
+  faviconImg.onload = () => {
+    // Remove skeleton classes after image loads
+    faviconImg.classList.remove(
+      'bg-gray-300',
+      'dark:bg-gray-700',
+      'skeleton-loading',
+    //   'bg-gradient-to-r',
+    //   'from-gray-300',
+    //   'to-gray-400',
+    //   'bg-[length:200px_100%]',
+    //   'bg-left'
+    );
+  };
+
+  
+
+  // Determine theme preference
+  const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = isDarkMode ? 'dark' : 'light';
+
+
+  faviconImg.src = `/get_favicon?domain=${encodeURIComponent(domain)}&theme=${theme}`;
+
                 // Create the domain text
                 const domainText = document.createElement('span');
                 domainText.textContent = domain;
 
                 // Append the favicon and text to the span
-                domainSpan.appendChild(faviconImg);
+                favIconWrapper.appendChild(faviconImg);
+                domainSpan.appendChild(favIconWrapper);
                 domainSpan.appendChild(domainText);
 
                 // Append the span to the list item
@@ -399,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
             y += velY;
             scale -= 0.02;
             rotation += 10;
-            opacity -= 0.01;
+            opacity -= 0.02;
             emojiElement.style.transform = `translate(${x}px, ${y}px) scale(${scale}) rotate(${rotation}deg)`;
             emojiElement.style.opacity = opacity;
             if (opacity > 0) {
@@ -505,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.metaKey || e.ctrlKey) {
             isCmdPressed = true;
             // Show trash icons on currently hovered cards
-            document.querySelectorAll('.link-card:hover .trash-icon').forEach(icon => {
+            document.querySelectorAll('.link-card:hover .actions-items-contaienr').forEach(icon => {
                 icon.classList.remove('opacity-0');
             });
         }
@@ -515,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!e.metaKey && !e.ctrlKey) {
             isCmdPressed = false;
             // Hide all trash icons
-            document.querySelectorAll('.trash-icon').forEach(icon => {
+            document.querySelectorAll(' .actions-items-contaienr').forEach(icon => {
                 icon.classList.add('opacity-0');
             });
         }
@@ -527,11 +573,14 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         favoritedFirstCheckbox.checked = !favoritedFirstCheckbox.checked;
         if (favoritedFirstCheckbox.checked) {
-            favoritedIcon.classList.remove('fa-heart-o', 'text-red-700');
-            favoritedIcon.classList.add('fa-heart', 'text-white');
+            favoritedIcon.classList.remove('fa-heart-o', 'text-indigo-700');
+            favoritedIcon.classList.add('fa-heart', 'text-white');  
+            favFilterContainer.classList.add('dark:from-red-600');
+            favFilterContainer.classList.add('dark:to-red-400');
+            favoritedText.classList.remove('dark:from-indigo-950');
             // favFilterContainer.classList.remove('bg-gradient-to-br', 'from-red-100', 'to-white', 'dark:from-red-50', 'dark:to-red-100');
-            favFilterContainer.classList.add('bg-red-500');
-            favoritedText.classList.remove('text-red-700');
+          
+            favoritedText.classList.remove('text-indigo-700');
             favoritedText.classList.add('text-white');
         } else {
             favoritedIcon.classList.remove('fa-heart', 'text-white');
