@@ -23564,8 +23564,8 @@ filter: brightness(var(--tw-brightness));
 }
 
 .brightness-120:hover .emoji{
-  opacity: 0.3;
-  transform: scale(1.1);
+  /* opacity: 0.3; */
+  transform: scale(1.2);
   }
   .link-card:hover p.bg-black\/20{
     background-color: #00000057 !important;

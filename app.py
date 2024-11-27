@@ -4,47 +4,42 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 from sqlalchemy import func
 from datetime import datetime
-import uuid  # For generating shortcut IDs
-from extensions import db  # Import db
-import os
-import json
-import datetime
-import secrets
 import uuid
+import os
 import requests
+from extensions import db
 from io import BytesIO
-# from models import User, Shortcut, Tag
 from dotenv import load_dotenv
+from flask_caching import Cache
+
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///shortcuts.db'
+app.config["CACHE_DEFAULT_TIMEOUT"] = 300 
 app.secret_key = os.getenv('SECRET_KEY')
 if not app.secret_key:
     raise ValueError("No SECRET_KEY set for Flask application")
-db.init_app(app)  # Initialize db with app
+db.init_app(app)
 
-# Import models after initializing db
+app.config['CACHE_TYPE'] = 'simple'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 86400  # Cache timeout in seconds (e.g., 1 day)
+cache = Cache(app)
+
 from models import User, Shortcut, Tag
-import os
 
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'  # Redirect to 'login' view if not authenticated
+login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# db = SQLAlchemy(app)
-
-shortcut_tags = db.Table('shortcut_tags',
-    db.Column('shortcut_id', db.String(36), db.ForeignKey('shortcut.id'), primary_key=True),
-    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True)
-)
 
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
@@ -52,6 +47,11 @@ def index():
 def get_favicon():
     domain = request.args.get('domain')
     theme = request.args.get('theme', 'light')
+    cache_key = f"favicon_{domain}_{theme}"
+    cached_favicon = cache.get(cache_key)
+    if cached_favicon:
+        cached_content, cached_mimetype = cached_favicon
+        return send_file(BytesIO(cached_content), mimetype=cached_mimetype)
     favicon_paths_dark = [
         '/favicon-dark.svg',
         '/favicon-dark.ico',
@@ -59,6 +59,7 @@ def get_favicon():
         '/favicons/favicon-dark.svg',
         '/favicons/favicon-dark.png',
         '/favicon.ico',
+        '/s/desktop/ef2da63d/img/logos/favicon_96x96.png',
     ]
     favicon_paths_light = [
         '/favicon.svg',
@@ -67,68 +68,40 @@ def get_favicon():
         '/favicons/favicon.svg',
         '/favicons/favicon.png',
         '/favicon.ico',
+        '/s/desktop/ef2da63d/img/logos/favicon_96x96.png',
     ]
-    paths = favicon_paths_dark if theme == 'dark' else favicon_paths_light
+    paths = favicon_paths_dark + favicon_paths_light if theme == 'dark' else favicon_paths_light
     for path in paths:
         url = f"https://{domain}{path}"
         try:
             response = requests.get(url, timeout=2)
             if response.status_code == 200:
+                cache.set(cache_key, (response.content, response.headers.get('Content-Type', 'image/x-icon')))
                 return send_file(BytesIO(response.content), mimetype=response.headers.get('Content-Type', 'image/x-icon'))
+          
         except requests.RequestException:
             continue
+    #set cache as local asset 'static/default', 'favicon.png'
+    with open(os.path.join('static', 'default', 'favicon.png'), 'rb') as f:
+        cache.set(cache_key, (f.read(), 'image/png'))
     return send_from_directory('static/default', 'favicon.png')
 
 @app.route('/api/tags', methods=['GET'])
-def get_tags():
-    search_query = request.args.get('search', '').lower()
-    tags_query = Tag.query.filter_by(user_id=current_user.id).all()
-
-    if search_query:
-        tags_query = tags_query.filter(Tag.name.ilike(f'%{search_query}%'))
-
-    tags = tags_query.all()
-
-    def get_tag_shortcut_count(tag):
-        count = tag.shortcuts.count()
-        for child in tag.children:
-            count += get_tag_shortcut_count(child)
-        return count
-
-    def build_tag_tree(parent_id=None):
-        tag_nodes = [tag for tag in tags if tag.parent_id == parent_id]
-        result = []
-        for tag in tag_nodes:
-            tag_count = get_tag_shortcut_count(tag)
-            tag_dict = {
-                'id': tag.id,
-                'name': tag.name,
-                'parent_id': tag.parent_id,
-                'count': tag_count,
-                'children': build_tag_tree(tag.id)
-            }
-            result.append(tag_dict)
-        return result
-
-    tags_tree = build_tag_tree()
-
-    return jsonify(tags_tree), 200
-
-@app.route('/api/shortcuts', methods=['GET'])
 @login_required
-def get_shortcuts():
+def get_tags():
+    # Gather filters from request
     search_query = request.args.get('search', '').lower()
-    sort_by = request.args.get('sort_by', 'date_added')
     filter_tags = request.args.getlist('tags')
     favorited_first = request.args.get('favorited_first', 'false').lower() == 'true'
 
-    shortcuts_query = Shortcut.query
+    # Base query for shortcuts
+    shortcuts_query = Shortcut.query.filter_by(user_id=current_user.id)
 
     if search_query:
         shortcuts_query = shortcuts_query.filter(
             (Shortcut.name.ilike(f'%{search_query}%')) |
-            (Shortcut.short_description.ilike(f'%{search_query}%')) |
-            (Shortcut.link.ilike(f'%{search_query}%'))
+            (Shortcut.link.ilike(f'%{search_query}%')) |
+            (Shortcut.short_description.ilike(f'%{search_query}%'))
         )
 
     if filter_tags:
@@ -145,8 +118,73 @@ def get_shortcuts():
 
         shortcuts_query = shortcuts_query.join(Shortcut.tags).filter(Tag.id.in_(tag_ids))
 
+    # Get IDs of filtered shortcuts
+    filtered_shortcut_ids = [shortcut.id for shortcut in shortcuts_query.all()]
+
+    # Query tags with counts based on filtered shortcuts
+    tag_counts = db.session.query(
+        Tag.id, Tag.name, Tag.parent_id, func.count(Shortcut.id)
+    ).join(shortcut_tag).join(Shortcut).filter(
+        Shortcut.id.in_(filtered_shortcut_ids)
+    ).group_by(Tag.id).all()
+
+    # Build tag hierarchy with counts
+    tags_dict = {}
+    for tag_id, tag_name, parent_id, count in tag_counts:
+        tags_dict[tag_id] = {
+            'id': tag_id,
+            'name': tag_name,
+            'parent_id': parent_id,
+            'count': count,
+            'children': []
+        }
+
+    # Organize tags into a tree
+    for tag in tags_dict.values():
+        parent_id = tag['parent_id']
+        if parent_id and parent_id in tags_dict:
+            tags_dict[parent_id]['children'].append(tag)
+
+    root_tags = [tag for tag in tags_dict.values() if not tag['parent_id'] or tag['parent_id'] not in tags_dict]
+
+    return jsonify(root_tags), 200
+
+@app.route('/api/shortcuts', methods=['GET'])
+@login_required
+def get_shortcuts():
+    search_query = request.args.get('search', '').lower()
+    sort_by = request.args.get('sort_by', 'date_added')
+    filter_tags = request.args.getlist('tags')
+    favorited_first = request.args.get('favorited_first', 'false').lower() == 'true'
+
+    shortcuts_query = Shortcut.query.filter_by(user_id=current_user.id)
+
+    if search_query:
+        shortcuts_query = shortcuts_query.filter(
+            (Shortcut.name.ilike(f'%{search_query}%')) |
+            (Shortcut.link.ilike(f'%{search_query}%')) |
+            (Shortcut.short_description.ilike(f'%{search_query}%'))
+        )
+
+    if filter_tags:
+        selected_tags = Tag.query.filter(Tag.name.in_(filter_tags)).all()
+        tag_ids = set()
+
+        def get_all_descendant_tag_ids(tag):
+            tag_ids.add(tag.id)
+            for child in tag.children:
+                get_all_descendant_tag_ids(child)
+
+        for tag in selected_tags:
+            get_all_descendant_tag_ids(tag)
+
+        shortcuts_query = shortcuts_query.join(Shortcut.tags).filter(Tag.id.in_(tag_ids))
+
+    if favorited_first:
+        shortcuts_query = shortcuts_query.order_by(Shortcut.favorited.desc())
+
     if sort_by == 'alphabetical':
-        shortcuts_query = shortcuts_query.order_by(Shortcut.name.asc())
+        shortcuts_query = shortcuts_query.order_by(Shortcut.name)
     elif sort_by == 'date_updated':
         shortcuts_query = shortcuts_query.order_by(Shortcut.date_updated.desc())
     elif sort_by == 'score':
@@ -156,10 +194,7 @@ def get_shortcuts():
     else:
         shortcuts_query = shortcuts_query.order_by(Shortcut.date_added.desc())
 
-    shortcuts = Shortcut.query.filter_by(user_id=current_user.id).all()
-
-    if favorited_first:
-        shortcuts.sort(key=lambda x: x.favorited, reverse=True)
+    shortcuts = shortcuts_query.all()
 
     pinned = [s for s in shortcuts if s.pinned]
     not_pinned = [s for s in shortcuts if not s.pinned]
@@ -167,11 +202,10 @@ def get_shortcuts():
 
     shortcuts_list = []
     for shortcut in shortcuts:
-        shortcuts_list.append({
+        shortcut_dict = {
             'id': shortcut.id,
             'name': shortcut.name,
             'link': shortcut.link,
-            'tags': [tag.name for tag in shortcut.tags],
             'emojis': shortcut.emojis,
             'color_from': shortcut.color_from,
             'color_to': shortcut.color_to,
@@ -179,9 +213,11 @@ def get_shortcuts():
             'pinned': shortcut.pinned,
             'favorited': shortcut.favorited,
             'score': shortcut.score,
-            'date_added': shortcut.date_added.isoformat(),
-            'date_updated': shortcut.date_updated.isoformat()
-        })
+            'tags': [tag.name for tag in shortcut.tags],
+            'date_added': shortcut.date_added.isoformat() if shortcut.date_added else None,
+            'date_updated': shortcut.date_updated.isoformat() if shortcut.date_updated else None
+        }
+        shortcuts_list.append(shortcut_dict)
 
     return jsonify(shortcuts_list), 200
 
@@ -192,7 +228,7 @@ def update_shortcut(shortcut_id):
     shortcut = Shortcut.query.filter_by(id=shortcut_id, user_id=current_user.id).first()
 
     if not shortcut:
-        return {'message': 'Shortcut not found'}, 404
+        return jsonify({'message': 'Shortcut not found.'}), 404
 
     for key in ['name', 'link', 'emojis', 'color_from', 'color_to', 'short_description', 'pinned', 'favorited', 'score']:
         if key in data:
@@ -202,23 +238,23 @@ def update_shortcut(shortcut_id):
         tags = process_tags(data['tags'])
         shortcut.tags = tags
 
+    shortcut.date_updated = datetime.utcnow()
     db.session.commit()
 
-    return jsonify({'message': 'Shortcut updated successfully'}), 200
+    return jsonify({'message': 'Shortcut updated successfully.'}), 200
 
 @app.route('/api/shortcuts/<shortcut_id>', methods=['DELETE'])
 @login_required
 def delete_shortcut(shortcut_id):
-    # shortcut = Shortcut.query.get(shortcut_id)
     shortcut = Shortcut.query.filter_by(id=shortcut_id, user_id=current_user.id).first()
-    
+
     if not shortcut:
-        return {'message': 'Shortcut not found'}, 404
+        return jsonify({'message': 'Shortcut not found.'}), 404
 
     db.session.delete(shortcut)
     db.session.commit()
 
-    return {'message': 'Shortcut deleted'}, 200
+    return jsonify({'message': 'Shortcut deleted successfully.'}), 200
 
 @app.route('/api/shortcuts', methods=['POST'])
 @login_required
@@ -227,7 +263,7 @@ def add_shortcut():
     required_fields = ['name', 'link', 'tags', 'emojis', 'color_from', 'color_to', 'short_description']
 
     if not all(field in data and data[field] for field in required_fields):
-        return {'message': 'Missing required fields or empty values'}, 400
+        return jsonify({'message': 'Missing required fields.'}), 400
 
     tags = process_tags(data['tags'])
 
@@ -243,13 +279,15 @@ def add_shortcut():
         favorited=data.get('favorited', False),
         score=float(data.get('score', 0.0)),
         user_id=current_user.id,
-        tags=tags
+        tags=tags,
+        date_added=datetime.utcnow(),
+        date_updated=datetime.utcnow()
     )
 
     db.session.add(shortcut)
     db.session.commit()
 
-    return jsonify({'message': 'Shortcut added successfully'}), 201
+    return jsonify({'message': 'Shortcut added successfully.'}), 201
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -283,23 +321,6 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-
-# def process_tags(tag_strings):
-#     tags = []
-#     for tag_string in tag_strings:
-#         hierarchy = [t.strip() for t in tag_string.split('>') if t.strip()]
-#         parent = None
-#         for tag_name in hierarchy:
-#             tag = Tag.query.filter_by(name=tag_name, parent=parent).first()
-#             if not tag:
-#                 tag = Tag(name=tag_name, parent=parent)
-#                 db.session.add(tag)
-#                 db.session.flush()
-#             parent = tag
-#         tags.append(parent)
-#     return tags
-
-
 def process_tags(tag_strings):
     tags = []
     for tag_string in tag_strings:
@@ -310,11 +331,10 @@ def process_tags(tag_strings):
             if not tag:
                 tag = Tag(name=tag_name, parent=parent)
                 db.session.add(tag)
-                db.session.flush()  # Flush to get the ID
+                db.session.flush()
             parent = tag
         tags.append(parent)
     return tags
-
 
 @app.route('/static/<path:filename>')
 def custom_static(filename):

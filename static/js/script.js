@@ -85,6 +85,115 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Variables to keep track of active tags
+    let activeTags = [];
+
+    // Update fetchShortcuts to fetch tags with current filters
+    function fetchShortcuts() {
+        const searchQuery = searchInput.value.toLowerCase();
+        const selectedTags = activeTags.map(tag => tag.name);
+
+        const searchParams = new URLSearchParams();
+        searchParams.set('search', searchQuery);
+        searchParams.set('sort_by', sortSelect.value);
+        searchParams.set('favorited_first', favoritedFirstCheckbox.checked);
+        selectedTags.forEach(tag => searchParams.append('tags', tag));
+
+        fetch(`/api/shortcuts?${searchParams.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                displayShortcuts(data);
+                // Fetch tags after fetching shortcuts
+                fetchTags(searchParams);
+            });
+    }
+
+    // Modify fetchTags to accept searchParams
+    function fetchTags(searchParams) {
+        fetch(`/api/tags?${searchParams.toString()}`)
+            .then(response => response.json())
+            .then(tags => {
+                renderTags(tags);
+            });
+    }
+
+
+
+    // Modify renderTags to implement hierarchical navigation
+    function renderTags(tagsData) {
+        tagsToolbar.innerHTML = '';
+
+        function renderTagLevel(tags, level) {
+            tags.forEach(tag => {
+                const tagContainer = document.createElement('div');
+                tagContainer.classList.add('flex', 'flex-shrink-0');
+
+                const tagLabel = document.createElement('label');
+                tagLabel.classList.add('tag-label', 'cursor-pointer');
+
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'text-xs font-mono';
+                tagSpan.textContent = `${tag.name} (${tag.count})`;
+
+                tagLabel.appendChild(tagSpan);
+                tagContainer.appendChild(tagLabel);
+
+                // Click event for the tag
+                tagLabel.addEventListener('click', () => {
+                    if (activeTags[level] && activeTags[level].id === tag.id) {
+                        // Deselect current tag and remove deeper levels
+                        activeTags = activeTags.slice(0, level);
+                    } else {
+                        // Select new tag and update activeTags
+                        activeTags = activeTags.slice(0, level);
+                        activeTags[level] = tag;
+                    }
+                    fetchShortcuts();
+                    renderTags(tagsData); // Re-render tags
+                });
+
+                tagsToolbar.appendChild(tagContainer);
+
+                // If this tag is active, render children
+                if (activeTags[level] && activeTags[level].id === tag.id) {
+                    // Add chevron
+                    const chevron = document.createElement('span');
+                    chevron.textContent = ' > ';
+                    chevron.className = 'chevron';
+                    tagsToolbar.appendChild(chevron);
+
+                    // Render child tags
+                    if (tag.children && tag.children.length > 0) {
+                        renderTagLevel(tag.children, level + 1);
+                    }
+                }
+            });
+        }
+
+        // Start rendering from root level tags
+        if (activeTags.length === 0) {
+            renderTagLevel(tagsData, 0);
+        } else {
+            // Find the active path of tags
+            let currentTags = tagsData;
+            for (let i = 0; i < activeTags.length; i++) {
+                const activeTag = activeTags[i];
+                renderTagLevel([activeTag], i);
+                if (activeTag.children && activeTag.children.length > 0) {
+                    currentTags = activeTag.children;
+                } else {
+                    currentTags = [];
+                }
+            }
+            if (currentTags.length > 0) {
+                renderTagLevel(currentTags, activeTags.length);
+            }
+        }
+    }
+
+    // Adjust event listeners to refetch tags when filters change
+    searchInput.addEventListener('input', fetchShortcuts);
+
     // Fetch shortcuts from the API
     function fetchShortcuts() {
         const searchQuery = searchInput.value.toLowerCase();
@@ -129,27 +238,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 linkCard.href = shortcut.link;
                 linkCard.target = '_blank';
                 linkCard.setAttribute('aria-label', 'Visit ' + shortcut.name);
-                linkCard.className = `link-card ${overlayStrength} relative h-48 z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden brightness-120 transition-all duration-200 h-40 rounded-lg`;
+                linkCard.className = `link-card ${overlayStrength} relative h-48 z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden transition-all duration-200 h-40 rounded-lg`;
                 linkCard.style.backgroundImage = `linear-gradient(to bottom right, ${shortcut.color_from}, ${shortcut.color_to})`;
 
                 // Add gradient overlay
                 const gradientOverlay = document.createElement('div');
-                gradientOverlay.className = averageLuminance < 0.9 ?  'absolute left-0 top-0 h-full w-full dark:highlight-white  bg-gradient-to-br from-white/10 to-black/10' : 'absolute left-0 top-0 h-full w-full  bg-gradient-to-b from-white/10 to-black/50';
+                gradientOverlay.className = averageLuminance < 0.9 ?  'absolute left-0 top-0 h-full w-full dark:highlight-white  bg-gradient-to-br from-white/10 to-black/10' : 'absolute left-0 top-0 h-full w-full  bg-gradient-to-b from-black/30 to-black/50';
                 linkCard.appendChild(gradientOverlay);
 
                
                 // Status badge (e.g., "Shortcut")
                 const statusBadgeContainer = document.createElement('div');
-                statusBadgeContainer.className = 'absolute hidden opacity-0 right-16 flex flex-wrap content-start gap-1 overflow-hidden top-3 left-3 text-xs  transition-opacity duration-200';
+                statusBadgeContainer.className = 'absolute hidden opacity-0 flex flex-wrap content-start gap-1 overflow-hidden top-3 text-xs  transition-opacity duration-200';
                 const statusBadge = document.createElement('div');
-                statusBadge.className = `inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20 leading-tight text-white opacity-80`;
+                statusBadge.className = `inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/30 leading-tight p-1 text-white opacity-100`;
                 const statusBadgeContent = document.createElement('div');
-                statusBadgeContent.className = 'inline-flex items-center px-1 py-0 ';
-                statusBadgeContent.textContent = 'Shortcut';
-                statusBadge.appendChild(statusBadgeContent);
+               
+                // Get tags array and convert to hierarchy string
+                const tags = shortcut.tags || [];
+                const tagStrings = tags.map(tag => {
+                    const parts = tag.split('>').map(t => t.trim());
+                    let result = '';
+                    parts.forEach((part, index) => {
+                        if (index > 0) {
+                            result += ' > ';
+                        }
+                        result += part;
+                    });
+                    return result;
+                });
+
+                if(tags.length !== 0){
+                // Create span for each tag
+                tagStrings.forEach(tag => {
+                    const tagSpan = document.createElement('span');
+                    tagSpan.className = 'inline-flex items-center px-1 py-0';
+                    tagSpan.textContent = tag;
+                    statusBadge.appendChild(tagSpan);
+
+                    // Add separator between tags
+                    if (tagStrings.indexOf(tag) < tagStrings.length - 1) {
+                        const separator = document.createElement('span');
+                        separator.className = 'px-0.5';
+                        separator.textContent = '•';
+                        statusBadge.appendChild(separator);
+                    }
+                });
                 statusBadgeContainer.appendChild(statusBadge);
                 linkCard.appendChild(statusBadgeContainer);
-
+                }
                 const iconContainer = document.createElement('div');
                 iconContainer.className = 'absolute hidden opacity-0 flex px-1 items-center rounded-xl top-2.5 right-4 text-xs  cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20  text-white  transition-opacity duration-200';
                     // Icon and count container (e.g., score)
@@ -201,18 +338,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 nameDiv.style.textShadow = '0px 3px 40px rgba(0, 0, 0, 0.8)';
                 nameDiv.textContent = shortcut.name;
                 linkCard.appendChild(nameDiv);
+                const descriptionDiv = document.createElement('div');
 
+                const descriptionText = document.createElement('p');
+                const descriptionSpan = document.createElement('span');
                 // Short description (if present)
                 if (shortcut.short_description) {
-                    const descriptionDiv = document.createElement('div');
                    
                     const svgDecor = `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15" viewBox="0 0 16 12"><path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0-4.97 1.2-6.51 6.13Z"></path></svg>`
                    
                     descriptionDiv.innerHTML= svgDecor;
-                    const descriptionText = document.createElement('p');
-                    const descriptionSpan = document.createElement('span');
                     descriptionText.className = `bg-black/15 transition-all duration-200 leading-tight `;
-                    descriptionSpan.className = `truncate break-words py-0.5  text-gray-200/70 pr-2 text-[0.78rem] -ml-1 ${textColor}`;
+                    descriptionSpan.className = `truncate break-words py-0.5  text-white/80 pr-2 text-[0.78rem] -ml-1 transition-opacity duration-200`;
                     descriptionSpan.textContent = shortcut.short_description;
                     descriptionText.appendChild(descriptionSpan);
                     descriptionDiv.appendChild(descriptionText);
@@ -222,18 +359,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     linkCard.appendChild(descriptionDiv);
                 }
 
+                const iconsContainer = document.createElement('span');
+                iconsContainer.classList.add('shortcut-icons-container', 'flex', 'gap-2', 'absolute', 'top-2', 'left-2', 'opacity-100', 'transition-opacity', 'text-lg', 'duration-200');
+                
+            if (shortcut.pinned) {
+                const pinnedIcon = document.createElement('i');
+                pinnedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md  fa-bookmark  text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+              
+                iconsContainer.appendChild(pinnedIcon);
+            }
+            if (!shortcut.pinned) {
+                const pinnedIcon = document.createElement('i');
+                pinnedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md opacity-0 absolute fa-bookmark-o  text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+              
+                iconsContainer.appendChild(pinnedIcon);
+            }
+            if (shortcut.favorited) {
+                const favoritedIcon = document.createElement('i');
+                favoritedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md  fa-heart text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+              
+                iconsContainer.appendChild(favoritedIcon);
+            }
+            if (!shortcut.favorited) {
+                const favoritedIcon = document.createElement('i');
+                favoritedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md opacity-0 absolute  fa-heart-o text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+              
+                iconsContainer.appendChild(favoritedIcon);
+            }
+
                 // Trash icon for deletion
                 const ActionIconsWR = document.createElement('span');
                 const trashIcon = document.createElement('i');
                 const editIcon = document.createElement('i');
                 ActionIconsWR.classList.add('action-items-container', 'absolute', 'bottom-2', 'left-2', 'opacity-0', 'transition-opacity', 'text-lg', 'duration-200');
-                trashIcon.className = 'trash-icon  fa fa-solid  fa-trash  text-indigo-100/60 cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
-                editIcon.className = 'ml-2 edit-icon  fa fa-solid  fa-pencil  text-indigo-100/60 cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                trashIcon.className = 'trash-icon  fa fa-solid drop-shadow-md  fa-trash  text-white/80 cursor-pointer hover:text-white/100 transition-opacity duration-200';
+                editIcon.className = 'ml-2 edit-icon  fa fa-solid drop-shadow-md  fa-pencil  text-white/80 cursor-pointer hover:text-white/100 transition-opacity duration-200';
                 
                 ActionIconsWR.appendChild(trashIcon);
                 ActionIconsWR.appendChild(editIcon);
                 
 
+                linkCard.appendChild(iconsContainer);
                 linkCard.appendChild(ActionIconsWR);
 
                 // Event listener for hover
@@ -245,8 +411,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     iconContainer.classList.remove('hidden');
                     iconContainer.classList.remove('opacity-0');
                     statusBadgeContainer.classList.remove('opacity-0');
-                    descriptionSpan.classList.remove('text-gray-200/70');
-                    descriptionSpan.classList.add('text-gray-200');
+                    descriptionSpan.classList.remove('text-white/80');
+                    descriptionSpan.classList.add('text-white');
                     
                     iconContainer.classList.add('opacity-80');
                     statusBadgeContainer.classList.add('opacity-100');
@@ -264,8 +430,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusBadgeContainer.classList.add('opacity-0');
                     iconContainer.classList.remove('opacity-80');
                     statusBadgeContainer.classList.remove('opacity-100');
-                    descriptionSpan.classList.add('text-gray-200/70');
-                    descriptionSpan.classList.remove('text-gray-200');
+                    descriptionSpan.classList.add('text-white/80');
+                    descriptionSpan.classList.remove('text-white');
                     emojiContainer.classList.remove('opacity-100');
                     setTimeout(() => {
                         statusBadgeContainer.classList.add('hidden');
@@ -293,19 +459,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 trashIcon.addEventListener('click', (e) => {
-                    e.preventDefault();
+                    // e.preventDefault();
                     deleteShortcut(shortcut.id);
                 });
 
                 // Click event for emoji animation and navigation
                 linkCard.addEventListener('click', (event) => {
                     event.preventDefault(); // Prevent immediate navigation
-                    const emojis = linkCard.querySelectorAll('.emoji')[0].innerHTML;
+                  
+                    if (event.target.closest('.action-items-container')) return;
+                    if (event.target.closest('.shortcut-icons-container')) return;
+                      const emojis = linkCard.querySelectorAll('.emoji')[0].innerHTML;
                     // console.log(emojis);
                     // const emojiArray = emojis.split(''); // Split emojis into an array
                     const splitEmoji = (string) => [...new Intl.Segmenter().segment(string)].map(x => x.segment)
                     // console.log(splitEmoji(emojis));
-                    const count = 15;
+                    const count = 8;
                     for (let i = 0; i < count; i++) {
                         const x = event.pageX;
                         const y = event.pageY;
@@ -313,7 +482,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     // Navigate to the link after a short delay
                     setTimeout(() => {
-                        // window.open(shortcut.link, '_blank');
+                        window.open(shortcut.link, '_blank');
+                        
                     }, 500); // Adjust delay as needed
                 });
 
@@ -417,48 +587,95 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Emoji animation function
+  
     function createEmoji(x, y, emojiArray) {
-        const gravity = 0.1;
+        const gravity = 0;
         const friction = 0.99;
         
-        console.log(emojiArray);
-        // const emojiElementCont = document.createElement('div');
-        const emojiElement = document.createElement('span');
-        emojiElement.innerText = emojiArray[Math.floor(Math.random() * emojiArray.length)];
-        emojiElement.style.position = 'absolute';
-        emojiElement.style.fontSize = '48px';
-        emojiElement.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
-        emojiElement.style.pointerEvents = 'none';
-        // emojiElementCont.appendChild(emojiElement);
-        document.body.appendChild(emojiElement);
-        let scale = Math.random() * 1.5;
-        let rotation = Math.random() * 360;
-        let opacity = 1;
-        let velX = (Math.random() - 0.5) * 20;
-        let velY = (Math.random() - 0.5) * 20;
-        function update() {
-            velY += gravity;
-            velX *= friction;
-            velY *= friction;
-            x += velX;
-            y += velY;
-            scale -= 0.02;
-            rotation += 10;
-            opacity -= 0.02;
-            emojiElement.style.transform = `translate(${x}px, ${y}px) scale(${scale}) rotate(${rotation}deg)`;
-            emojiElement.style.opacity = opacity;
-            if (opacity > 0) {
-                requestAnimationFrame(update);
-            } else {
-                emojiElement.remove();
-            }
+        // Create multiple ripples with stagger
+        for (let i = 0; i < 3; i++) {
+            const ripple = document.createElement('div');
+            ripple.style.position = 'absolute';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.style.width = '0px';
+            ripple.style.height = '0px';
+            ripple.style.opacity = '0';
+            ripple.style.border = '2px solid rgba(255,255,255,'+0.05*(i/3)+')';
+            ripple.style.borderRadius = '50%';
+            ripple.style.transform = 'translate(-50%, -50%)';
+            ripple.style.animation = `ripple 0.5s cubic-bezier(0.4, 0, 0.2, 1) ${i * 0.1}s`;
+            document.body.appendChild(ripple);
+
+            ripple.style.width = '50px';
+            ripple.style.height = '50px';
+
+            // Remove ripple after animation
+            setTimeout(() => ripple.remove(), 500 + (i * 100));
         }
-        update();
+
+        // Create emojis with stagger
+        for (let i = 0; i < emojiArray.length; i++) {
+            setTimeout(() => {
+                const emojiElement = document.createElement('span');
+                emojiElement.innerText = emojiArray[i];
+                emojiElement.style.position = 'absolute';
+                emojiElement.style.fontSize = '48px';
+                emojiElement.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                emojiElement.style.pointerEvents = 'none';
+                // document.body.appendChild(emojiElement);
+
+                let scale = Math.random() * 0.7 + 0.3;
+                let rotation = Math.random() * 360;
+                let opacity = 1;
+                let velX = (Math.random() - 0.5) * 40;
+                let velY = (Math.random() - 0.5) * 40;
+
+                function update() {
+                    velY += gravity;
+                    velX *= friction;
+                    velY *= friction;
+                    x += velX;
+                    y += velY;
+                    scale -= 0.03;
+                    rotation += 5;
+                    opacity -= 0.03;
+                    emojiElement.style.transform = `translate(${x}px, ${y}px) scale(${scale}) rotate(${rotation}deg)`;
+                    emojiElement.style.opacity = opacity;
+                    if (opacity > 0) {
+                        requestAnimationFrame(update);
+                    } else {
+                        emojiElement.remove();
+                    }
+                }
+                update();
+            }, i * 10); // 10ms stagger between each emoji
+        }
+
+        // Add keyframe animation for ripple effect
+        if (!document.querySelector('#rippleAnimation')) {
+            const style = document.createElement('style');
+            style.id = 'rippleAnimation';
+            style.textContent = `
+                @keyframes ripple {
+                    0% {
+                        transform: translate(-50%, -50%) scale(0);
+                        opacity: 0;
+                    }
+                    5% {
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translate(-50%, -50%) scale(3);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
-      // Fetch and render tags for the tags toolbar
-      function fetchTags() {
+    function fetchTags() {
         fetch('/api/tags')
             .then(response => response.json())
             .then(tags => {
@@ -466,17 +683,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // Update tagsToolbar rendering
     function renderTags(tagsData) {
-        const tagsToolbar = document.getElementById('tagsToolbar');
         tagsToolbar.innerHTML = '';
         tagsData.forEach(tag => {
             const tagContainer = document.createElement('div');
             tagContainer.classList.add('flex', 'flex-shrink-0');
 
             const tagLabel = document.createElement('label');
-            tagLabel.classList.add('flex', 'bg-gradient-to-br','hover:opacity-100' ,'rounded-lg', 'from-gray-300','to-transparent', 'items-center', 'gap-1', 'px-2', 'py-2', 'cursor-pointer', 'transition-all', 'duration-200');
-           
+            tagLabel.classList.add('flex', 'bg-gradient-to-br', 'hover:opacity-100', 'rounded-lg', 'from-gray-300', 'to-transparent', 'items-center', 'gap-1', 'px-2', 'py-2', 'cursor-pointer', 'transition-all', 'duration-200');
+
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.classList.add('hidden');
@@ -484,25 +699,21 @@ document.addEventListener('DOMContentLoaded', () => {
             checkbox.checked = selectedTags.includes(tag.name);
             checkbox.addEventListener('change', () => {
                 if (checkbox.checked) {
-                     tagLabel.classList.remove('opacity-30');
-           
+                    tagLabel.classList.remove('opacity-30');
                     selectedTags.push(tag.name);
                 } else {
                     selectedTags = selectedTags.filter(t => t !== tag.name);
                     tagLabel.classList.add('opacity-30');
                 }
                 fetchShortcuts();
-                renderTags(tagsData); // Re-render tags to update styles
+                renderTags(tagsData);
             });
 
-            // Determine classes based on checkbox state
             if (checkbox.checked) {
                 tagLabel.classList.add('bg-gradient-to-br', 'from-blue-500', 'to-blue-900', 'text-white');
                 tagLabel.classList.remove('opacity-30');
             } else {
                 tagLabel.classList.add('dark:from-gray-800', 'dark:text-white');
-                // tagLabel.classList.add('opacity-30');
-
             }
 
             const tagSpan = document.createElement('span');
@@ -521,7 +732,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Render tags autocomplete dropdown
     function renderTagsDropdown(tags) {
         tagsDropdown.innerHTML = '';
         if (tags.length === 0) {
@@ -591,6 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
             favoritedText.classList.add('text-red-700');
         }
         fetchShortcuts();
+        
     });
 
     // Open modal for adding/editing
