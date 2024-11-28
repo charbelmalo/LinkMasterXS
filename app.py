@@ -11,6 +11,7 @@ from extensions import db
 from io import BytesIO
 from dotenv import load_dotenv
 from flask_caching import Cache
+from models import User, Shortcut, Tag, shortcut_tag
 
 load_dotenv()
 
@@ -89,65 +90,42 @@ def get_favicon():
 @app.route('/api/tags', methods=['GET'])
 @login_required
 def get_tags():
-    # Gather filters from request
     search_query = request.args.get('search', '').lower()
-    filter_tags = request.args.getlist('tags')
-    favorited_first = request.args.get('favorited_first', 'false').lower() == 'true'
+    active_tags = request.args.getlist('tags')
 
-    # Base query for shortcuts
-    shortcuts_query = Shortcut.query.filter_by(user_id=current_user.id)
+    # Start with the root tags if no active tags
+    if not active_tags:
+        tags = Tag.query.filter_by(parent=None).all()
+    else:
+        # Get the last active tag to fetch its children
+        last_active_tag_name = active_tags[-1]
+        last_active_tag = Tag.query.filter_by(name=last_active_tag_name).first()
+        tags = last_active_tag.children.all() if last_active_tag else []
 
-    if search_query:
-        shortcuts_query = shortcuts_query.filter(
-            (Shortcut.name.ilike(f'%{search_query}%')) |
-            (Shortcut.link.ilike(f'%{search_query}%')) |
-            (Shortcut.short_description.ilike(f'%{search_query}%'))
+    # Build tags data with counts
+    tags_data = []
+    for tag in tags:
+        count_query = db.session.query(func.count(Shortcut.id)).join(shortcut_tag).join(Tag).filter(
+            Shortcut.user_id == current_user.id,
+            Tag.id == tag.id
         )
 
-    if filter_tags:
-        selected_tags = Tag.query.filter(Tag.name.in_(filter_tags)).all()
-        tag_ids = set()
+        # Apply search query if present
+        if search_query:
+            count_query = count_query.filter(
+                (Shortcut.name.ilike(f'%{search_query}%')) |
+                (Shortcut.link.ilike(f'%{search_query}%')) |
+                (Shortcut.short_description.ilike(f'%{search_query}%'))
+            )
 
-        def get_all_descendant_tag_ids(tag):
-            tag_ids.add(tag.id)
-            for child in tag.children:
-                get_all_descendant_tag_ids(child)
+        count = count_query.scalar()
+        tags_data.append({
+            'id': tag.id,
+            'name': tag.name,
+            'count': count
+        })
 
-        for tag in selected_tags:
-            get_all_descendant_tag_ids(tag)
-
-        shortcuts_query = shortcuts_query.join(Shortcut.tags).filter(Tag.id.in_(tag_ids))
-
-    # Get IDs of filtered shortcuts
-    filtered_shortcut_ids = [shortcut.id for shortcut in shortcuts_query.all()]
-
-    # Query tags with counts based on filtered shortcuts
-    tag_counts = db.session.query(
-        Tag.id, Tag.name, Tag.parent_id, func.count(Shortcut.id)
-    ).join(shortcut_tag).join(Shortcut).filter(
-        Shortcut.id.in_(filtered_shortcut_ids)
-    ).group_by(Tag.id).all()
-
-    # Build tag hierarchy with counts
-    tags_dict = {}
-    for tag_id, tag_name, parent_id, count in tag_counts:
-        tags_dict[tag_id] = {
-            'id': tag_id,
-            'name': tag_name,
-            'parent_id': parent_id,
-            'count': count,
-            'children': []
-        }
-
-    # Organize tags into a tree
-    for tag in tags_dict.values():
-        parent_id = tag['parent_id']
-        if parent_id and parent_id in tags_dict:
-            tags_dict[parent_id]['children'].append(tag)
-
-    root_tags = [tag for tag in tags_dict.values() if not tag['parent_id'] or tag['parent_id'] not in tags_dict]
-
-    return jsonify(root_tags), 200
+    return jsonify(tags_data), 200
 
 @app.route('/api/shortcuts', methods=['GET'])
 @login_required
@@ -182,6 +160,7 @@ def get_shortcuts():
 
     if favorited_first:
         shortcuts_query = shortcuts_query.order_by(Shortcut.favorited.desc())
+
 
     if sort_by == 'alphabetical':
         shortcuts_query = shortcuts_query.order_by(Shortcut.name)
@@ -323,24 +302,24 @@ def logout():
 
 def process_tags(tag_strings):
     tags = []
-    for tag_string in tag_strings:
+    for tag_string in tag_strings:        
         hierarchy = [t.strip() for t in tag_string.split('>') if t.strip()]
-        parent = None
-        for tag_name in hierarchy:
-            tag = Tag.query.filter_by(name=tag_name, parent=parent).first()
-            if not tag:
-                tag = Tag(name=tag_name, parent=parent)
-                db.session.add(tag)
-                db.session.flush()
-            parent = tag
-        tags.append(parent)
-    return tags
-
-@app.route('/static/<path:filename>')
-def custom_static(filename):
+        parent = None       
+        for tag_name in hierarchy:            
+            tag = Tag.query.filter_by(name=tag_name, parent=parent).first()            
+            if not tag:                
+                tag = Tag(name=tag_name, parent=parent)                
+                db.session.add(tag)                
+                db.session.flush()            
+                parent = tag        
+                tags.append(parent)    
+                return tags
+            
+@app.route('/static/<path:filename>')            
+def custom_static(filename):    
     return send_from_directory('static', filename)
 
-if __name__ == '__main__':
-    with app.app_context():
+if __name__ == '__main__':    
+    with app.app_context():        
         db.create_all()
-    app.run(debug=True)
+        app.run(debug=True)

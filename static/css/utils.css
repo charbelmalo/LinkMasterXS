@@ -1,5 +1,4 @@
-
-  .skeleton-loading {
+.skeleton-loading {
     background: linear-gradient(
       80.94deg,
       rgba(255, 255, 255, 0.05) 8.87%,
@@ -27,4 +26,3 @@
       background-position: -100% 0;
     }
   }
-  

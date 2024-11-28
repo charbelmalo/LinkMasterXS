@@ -2,12 +2,28 @@
 from app import db, process_tags
 import uuid
 import datetime
-from models import User, Shortcut, Tag
+from models import User, Shortcut, Tag, shortcut_tags
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
+def clear_database():
+    """Function to clear all data from the database tables."""
+    with app.app_context():
+        try:
+            # Drop all existing data from tables
+            db.session.query(Shortcut).delete()
+            db.session.query(Tag).delete()
+            db.session.query(User).delete()
+            db.session.commit()
+            print("Database cleared successfully.")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error clearing database: {e}")
+
 def seed_database():
+    # First clear the database
+    clear_database()
     # Define the test user credentials
     test_username = 'test'
     test_email = 'test@test.com'
@@ -84,7 +100,7 @@ def seed_database():
                 "score": 8.2,
                 "date_added": "2024-11-24T06:47:14.926698",
                 "date_updated": "2024-11-24T06:47:14.926761",
-                "tags": []
+                "tags": ["Development > Tools", "AI"]
             },
             {
                 "id": "ffda249b-3057-4129-a3d3-346433146a98",
@@ -99,7 +115,7 @@ def seed_database():
                 "score": 9.2,
                 "date_added": "2024-11-24T07:07:20.366501",
                 "date_updated": "2024-11-24T07:07:20.366560",
-                "tags": []
+                "tags": ["Graphics", "AI"]
             },
             {
                 "id": "93aa19de-1a1b-4c67-bbb3-bdceeb4ebe02",
@@ -270,7 +286,7 @@ def seed_database():
 if __name__ == '__main__':
     from app import app  # Import the app instance
     with app.app_context():
-        db.create_all()
-        seed_database()  # Call the seeding function
+        seed_database() 
+        db.create_all() # Call the seeding function
     # Optionally, you can remove or comment out the following line
     # app.run(debug=True)

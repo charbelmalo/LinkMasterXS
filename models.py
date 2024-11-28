@@ -37,8 +37,6 @@ class Shortcut(db.Model):
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    # tags = db.relationship('Tag', secondary=shortcut_tags, backref=db.backref('shortcuts', lazy='dynamic'))
     # Relationships
     tags = db.relationship('Tag', secondary='shortcut_tag', backref=db.backref('shortcuts', lazy='dynamic'))
 
@@ -48,7 +46,7 @@ class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     parent_id = db.Column(db.Integer, db.ForeignKey('tag.id'), nullable=True)
-    parent = db.relationship('Tag', remote_side=[id], backref='children')
+    children = db.relationship('Tag', backref=db.backref('parent', remote_side=[id]), lazy='dynamic')
 
 # Association Table for Many-to-Many Relationship
 shortcut_tag = db.Table('shortcut_tag',

@@ -113,14 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`/api/tags?${searchParams.toString()}`)
             .then(response => response.json())
             .then(tags => {
-                renderTags(tags);
+                srenderTags(tags);
             });
     }
 
 
 
     // Modify renderTags to implement hierarchical navigation
-    function renderTags(tagsData) {
+    function srenderTags(tagsData) {
         tagsToolbar.innerHTML = '';
 
         function renderTagLevel(tags, level) {
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         activeTags[level] = tag;
                     }
                     fetchShortcuts();
-                    renderTags(tagsData); // Re-render tags
+                    srenderTags(tagsData); // Re-render tags
                 });
 
                 tagsToolbar.appendChild(tagContainer);
@@ -194,24 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Adjust event listeners to refetch tags when filters change
     searchInput.addEventListener('input', fetchShortcuts);
 
-    // Fetch shortcuts from the API
-    function fetchShortcuts() {
-        const searchQuery = searchInput.value.toLowerCase();
-        
-        const selectedTags = Array.from(document.querySelectorAll('#tagsToolbar input:checked')).map(input => input.value);
-
-        const searchParams = new URLSearchParams();
-        searchParams.set('search', searchQuery);
-        searchParams.set('sort_by', sortSelect.value);
-        searchParams.set('favorited_first', favoritedFirstCheckbox.checked);
-        selectedTags.forEach(tag => searchParams.append('tags', tag));
-
-        fetch(`/api/shortcuts?${searchParams.toString()}`)
-            .then(response => response.json())
-            .then(data => {
-                displayShortcuts(data);
-            });
-    }
 
     // Display shortcuts in the grid
     function displayShortcuts(shortcuts) {
@@ -345,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Short description (if present)
                 if (shortcut.short_description) {
                    
-                    const svgDecor = `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15" viewBox="0 0 16 12"><path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0-4.97 1.2-6.51 6.13Z"></path></svg>`
+                    const svgDecor = `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15" viewBox="0 0 16 12"><path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0 0-4.97 1.2-6.51 6.13Z"></path></svg>`
                    
                     descriptionDiv.innerHTML= svgDecor;
                     descriptionText.className = `bg-black/15 transition-all duration-200 leading-tight `;
@@ -679,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/tags')
             .then(response => response.json())
             .then(tags => {
-                renderTags(tags);
+                srenderTags(tags);
             });
     }
 
@@ -706,7 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tagLabel.classList.add('opacity-30');
                 }
                 fetchShortcuts();
-                renderTags(tagsData);
+                srenderTags(tagsData);
             });
 
             if (checkbox.checked) {
@@ -983,4 +965,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const walk = (x - startX) * 1; // Adjust scroll speed
         tagsToolbar.scrollLeft = scrollLeft - walk;
     });
+
+    // Fetch and render tags
+    fetch('/api/tags')
+        .then(response => response.json())
+        .then(data => {
+            srenderTags(data);
+        })
+        .catch(error => {
+            console.error('Error fetching tags:', error);
+        });
+
+  
 });
