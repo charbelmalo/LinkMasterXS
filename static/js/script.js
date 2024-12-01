@@ -349,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tagsToolbar.innerHTML = '';
         const tagList = document.createElement('ul');
         tagList.classList.add('tag-tree');
+        tagList.classList.add('max-h-unset', 'overflow-hidden');
         renderTagTree(tagsData, tagList);
         tagsToolbar.appendChild(tagList);
     }
@@ -538,7 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             else if (!shortcut.pinned) {
                 const pinnedIcon = document.createElement('i');
-                pinnedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md  fa-bookmark-o opacity-40 text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                pinnedIcon.className = 'favorited-icon  fa fa-regular drop-shadow-md  fa-bookmark opacity-40 text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
               
                 iconsContainerFlex.appendChild(pinnedIcon);
             }
@@ -550,7 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             else if (!shortcut.favorited) {
                 const favoritedIcon = document.createElement('i');
-                favoritedIcon.className = 'pinned-icon  fa fa-solid drop-shadow-md   fa-heart-o opacity-40 text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                favoritedIcon.className = 'pinned-icon  fa fa-regular drop-shadow-md   fa-heart opacity-40 text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
               
                 iconsContainerFlex.appendChild(favoritedIcon);
             }   
@@ -628,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation();
                 const target = e.target;
                 
-                if (target.classList.contains('fa-heart') || target.classList.contains('fa-heart-o')) {
+                if (target.classList.contains('fa-solid') || target.classList.contains('fa-regular')) {
                     if (confirm('Do you want to change the favorite status of this shortcut?')) {
                         // Toggle favorite status
                         fetch(`/api/shortcuts/${shortcut.id}`, {
@@ -886,49 +887,66 @@ function fetchTags() {
 }
 
 function renderTagTree(tags, container, level = 0) {
-    tags.forEach(tag => {
+    tags.forEach((tag, index) => {
+        const isLast = index === tags.length - 1;
+
+        // Main container for each tag item
         const tagItemWrap = document.createElement('div');
-        tagItemWrap.className = 'flex  justify-start';
+        tagItemWrap.className = 'flex h-[28px] w-full items-center justify-between gap-1.5';
+        tagItemWrap.style.paddingLeft = `${level * 20}px`; // Adjust padding based on level
 
-        const tagItem = document.createElement('div');
-        tagItem.className = 'flex items-start flex-grow justify-between ';
-        tagItem.style.paddingLeft = `${level * 20}px`;
+        // Icon container
+        const iconContainer = document.createElement('div');
+        iconContainer.className = 'relative h-[28px] w-[19px] flex-none';
 
-        
-            const svg = document.createElement('span');
-            svg.innerHTML = '<svg class="text-gray-300 dark:text-gray-700" width="19" height="28" viewBox="0 0 19 28" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M1 0C1 7.42391 7.4588 13.5 15.5 13.5V14.5C6.9726 14.5 0 8.04006 0 0H1Z" fill="currentColor"></path></svg>';
-            tagItemWrap.appendChild(svg);
-        
-
-        const tagName = document.createElement('div');
-        tagName.innerHTML = `<a href="#" data-tag-id="${tag.id}" class=" font-mono  text-indigo-600 dark:text-indigo-300 tag-link text-xs">${tag.name}</a>`;
-       
-        tagItem.appendChild(tagName);
-
-        if (tag.count) {
-            const tagCount = document.createElement('span');
-            tagCount.className = 'ml-1 text-gray-600 dark:text-gray-400';
-            tagCount.innerHTML = `(<span>${tag.count}</span>)`;
-            tagItem.appendChild(tagCount);
+        // Left vertical line
+        const leftLine = document.createElement('div');
+        leftLine.className = 'left absolute inset-y-0 -top-[3px] left-0 w-px bg-gray-300 dark:bg-gray-700';
+        if (isLast) {
+            leftLine.style.bottom = '28px'; // Adjust the bottom position for the last item
         }
-            // Add event delegation for tag links
-            tagItem.addEventListener('click', (e) => {
-                if (e.target.classList.contains('tag-link')) {
-                    e.preventDefault();
-                    const tagId = e.target.dataset.tagId;
-                    if (tagId) {
-                        handleTagSelection(parseInt(tagId));
-                        // Toggle selected state visually
-                        e.target.classList.toggle('selected');
-                        // fetchShortcuts();
-                        fetchTags();
-                    }
-                }
-            });
+        iconContainer.appendChild(leftLine);
 
-        
-            
-        tagItemWrap.appendChild(tagItem);
+        // SVG icon
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'text-gray-300 dark:text-gray-700');
+        svg.setAttribute('width', '19');
+        svg.setAttribute('height', '28');
+        svg.setAttribute('viewBox', '0 0 19 28');
+        svg.innerHTML = '<path fill-rule="evenodd" clip-rule="evenodd" d="M1 0C1 7.42391 7.4588 13.5 15.5 13.5V14.5C6.9726 14.5 0 8.04006 0 0H1Z" fill="currentColor"></path>';
+        iconContainer.appendChild(svg);
+
+        tagItemWrap.appendChild(iconContainer);
+
+        // Tag name
+        const tagName = document.createElement('div');
+        tagName.className = 'font-semibold';
+        tagName.textContent = tag.name;
+        tagItemWrap.appendChild(tagName);
+
+        // Separator line
+        const separatorLine = document.createElement('div');
+        separatorLine.className = 'mx-3 flex-1 translate-y-[2.5px] self-center border-b border-dotted dark:border-gray-800';
+        tagItemWrap.appendChild(separatorLine);
+
+        // Tag link with count
+        const tagLink = document.createElement('a');
+        tagLink.className = 'text-gray-700 underline decoration-gray-300 hover:text-gray-900 hover:decoration-gray-600 dark:text-gray-300 dark:decoration-gray-500 dark:hover:text-gray-100 dark:hover:decoration-gray-200';
+        tagLink.href = `#`; // Adjust the URL as needed
+        tagLink.textContent = `${tag.count} Tags`;
+        tagItemWrap.appendChild(tagLink);
+
+        // Event listener for the tag link
+        tagLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tagId = tag.id;
+            if (tagId) {
+                handleTagSelection(parseInt(tagId));
+                tagLink.classList.toggle('selected');
+                fetchTags();
+            }
+        });
+
         container.appendChild(tagItemWrap);
 
         // Recursively render child tags
@@ -1038,8 +1056,8 @@ function handleTagSelection(tagId) {
         
         if (favoritedFirstCheckbox.checked) {
             
-            favoritedIcon.classList.remove('fa-heart-o', 'text-indigo-700');
-            favoritedIcon.classList.add('fa-heart', 'text-white');
+            favoritedIcon.classList.remove('fa-regular', 'text-indigo-700');
+            favoritedIcon.classList.add('fa-solid', 'text-white');
             favFilterContainer.classList.add('dark:from-red-600', 'dark:to-red-400');
             favoritedText.classList.remove('dark:from-indigo-950');
             favoritedText.classList.remove('text-indigo-700');
@@ -1048,12 +1066,12 @@ function handleTagSelection(tagId) {
             fetchShortcuts();
             // Update opacity for all shortcuts
             document.querySelectorAll('.link-card').forEach(card => {
-                const isFavorited = card.querySelector('.fa-heart') !== null;
+                const isFavorited = card.querySelector('.fa-solid') !== null;
                 card.style.opacity = isFavorited ? '1' : '0.5';
             });
         } else {
-            favoritedIcon.classList.remove('fa-heart', 'text-white');
-            favoritedIcon.classList.add('fa-heart-o', 'text-red-700');
+            favoritedIcon.classList.remove('fa-solid', 'text-white');
+            favoritedIcon.classList.add('fa-regular', 'text-red-700');
             favFilterContainer.classList.remove('dark:from-red-600', 'dark:to-red-400');
             favoritedText.classList.remove('text-white');
             favoritedText.classList.add('text-red-700');
