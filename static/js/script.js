@@ -533,25 +533,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 iconsContainerFlex.classList.add('flex', 'gap-2','transition-opacity', 'text-lg', 'duration-200');
             if (shortcut.pinned) {
                 const pinnedIcon = document.createElement('i');
-                pinnedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md  fa-bookmark  text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                pinnedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md  fa-bookmark  text-white cursor-pointer hover:text-zinc-100 transition-opacity duration-200';
               
                 iconsContainerFlex.appendChild(pinnedIcon);
             }
             else if (!shortcut.pinned) {
                 const pinnedIcon = document.createElement('i');
-                pinnedIcon.className = 'favorited-icon  fa fa-regular drop-shadow-md  fa-bookmark opacity-40 text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                pinnedIcon.className = 'favorited-icon  fa fa-regular drop-shadow-md  fa-bookmark opacity-40 text-white cursor-pointer hover:text-zinc-100 transition-opacity duration-200';
               
                 iconsContainerFlex.appendChild(pinnedIcon);
             }
             if (shortcut.favorited) {
                 const favoritedIcon = document.createElement('i');
-                favoritedIcon.className = 'pinned-icon  fa fa-solid drop-shadow-md  fa-heart text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                favoritedIcon.className = 'pinned-icon  fa fa-solid drop-shadow-md  fa-heart text-white cursor-pointer hover:text-zinc-100 transition-opacity duration-200';
               
                 iconsContainerFlex.appendChild(favoritedIcon);
             }
             else if (!shortcut.favorited) {
                 const favoritedIcon = document.createElement('i');
-                favoritedIcon.className = 'pinned-icon  fa fa-regular drop-shadow-md   fa-heart opacity-40 text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                favoritedIcon.className = 'pinned-icon  fa fa-regular drop-shadow-md   fa-heart opacity-40 text-white cursor-pointer hover:text-zinc-100 transition-opacity duration-200';
               
                 iconsContainerFlex.appendChild(favoritedIcon);
             }   
@@ -700,7 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const domainLi = document.createElement('li');
                 domainLi.className = 'group relative flex items-center whitespace-nowrap';
                 const domainSpan = document.createElement('span');
-                domainSpan.className = 'flex items-center gap-1 text-indigo-900 dark:text-blue-50 text-xs font-mono mt-1';
+                domainSpan.className = 'flex items-center gap-1 text-zinc-900 dark:text-blue-50 text-xs font-mono mt-1';
                 const favIconWrapper = document.createElement('span');
                 favIconWrapper.className = ' rounded m-1';
                 // Create the favicon image
@@ -1056,11 +1056,11 @@ function handleTagSelection(tagId) {
         
         if (favoritedFirstCheckbox.checked) {
             
-            favoritedIcon.classList.remove('fa-regular', 'text-indigo-700');
+            favoritedIcon.classList.remove('fa-regular', 'text-zinc-700');
             favoritedIcon.classList.add('fa-solid', 'text-white');
             favFilterContainer.classList.add('dark:from-red-600', 'dark:to-red-400');
-            favoritedText.classList.remove('dark:from-indigo-950');
-            favoritedText.classList.remove('text-indigo-700');
+            favoritedText.classList.remove('dark:from-zinc-900');
+            favoritedText.classList.remove('text-zinc-700');
             favoritedText.classList.add('text-white');
             
             fetchShortcuts();
