@@ -4,10 +4,11 @@ flask_cors
 flask_sqlalchemy
 flask_login
 flask_caching
+flask_session
 sqlalchemy
 python-dotenv
 requests
-
+beautifulsoup4
 
 # ~~~~~~~~~     AI GENERATED REQUIREMENTS START   ~~~~~~~~~~#
 #

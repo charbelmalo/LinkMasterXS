@@ -1,0 +1,19 @@
+<!-- tag_item.html -->
+<div class="flex items-center" style="padding-left:20px;">
+    {% if level > 0 %}
+        <svg width="15" height="28" class="text-gray-300" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0.967742 0C0.967742 7.67991 7.21819 13.9655 15 13.9655V15C6.74768 15 0 8.3173 0 0H0.967742Z" fill="currentColor"></path>
+        </svg>
+    {% endif %}
+    <div class="font-semibold"><a href="#" data-tag-id="{{ tag.id }}" class="tag-link  underline" >{{ tag.name }}</a></div>
+    {% if tag.count %}
+        <span class="ml-1 text-gray-600">
+            ( {{ tag.count }} )
+        </span>
+    {% endif %}
+</div>
+{% if tag.children %}
+    {% for child in tag.children %}
+        {% include 'tag_item.html' with tag=child level=level+1 %}
+    {% endfor %}
+{% endif %}

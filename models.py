@@ -39,6 +39,23 @@ class Shortcut(db.Model):
 
     # Relationships
     tags = db.relationship('Tag', secondary='shortcut_tag', backref=db.backref('shortcuts', lazy='dynamic'))
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'link': self.link,
+            'emojis': self.emojis,
+            'tags': [tag.name for tag in self.tags],
+            'color_from': self.color_from,
+            'color_to': self.color_to,
+            'short_description': self.short_description,
+            'pinned': self.pinned,
+            'favorited': self.favorited,
+            'score': self.score,
+            'date_added': self.date_added,
+            'date_updated': self.date_updated,
+            'user_id': self.user_id
+        }
 
 class Tag(db.Model):
     __tablename__ = 'tag'

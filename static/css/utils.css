@@ -26,3 +26,46 @@
       background-position: -100% 0;
     }
   }
+
+  .tag-tree {
+    list-style: none;
+    padding-left: 0;
+}
+
+.tag-item {
+    position: relative;
+    margin-left: 20px;
+}
+
+.tag-item .toggle-button {
+    position: absolute;
+    left: -20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.tag-item .tag-label {
+    cursor: pointer;
+}
+
+.tag-item.expanded > ul {
+    display: block;
+}
+
+.tag-item > ul {
+    display: none;
+}
+
+
+.tag-label {
+    cursor: pointer;
+}
+
+.child-tags {
+    display: none;
+}
+
+.tag-item.active > .child-tags {
+    display: block;
+}

@@ -1,4 +1,6 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory, send_file, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file, redirect, url_for, flash, session
+from flask_session import Session 
+# frop
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
@@ -11,7 +13,8 @@ from extensions import db
 from io import BytesIO
 from dotenv import load_dotenv
 from flask_caching import Cache
-from models import User, Shortcut, Tag, shortcut_tag
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 
 load_dotenv()
 
@@ -28,7 +31,7 @@ app.config['CACHE_TYPE'] = 'simple'
 app.config['CACHE_DEFAULT_TIMEOUT'] = 86400  # Cache timeout in seconds (e.g., 1 day)
 cache = Cache(app)
 
-from models import User, Shortcut, Tag
+from models import User, Shortcut, Tag, shortcut_tag
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -38,16 +41,40 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# @app.context_processor
+# def inject_csrf_token():
+#     from flask_wtf.csrf import generate_csrf
+#     return dict(csrf_token=generate_csrf())
+# app.py
 
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.html')
+    domains = get_domains().get_json()
+    theme = session.get('theme', 'light')
+    return render_template('index.html', domains=domains, theme=theme)
+
+
+@app.route('/set_theme', methods=['POST'])
+def set_theme():
+    data = request.get_json()
+    theme = data.get('theme')
+
+    if theme not in ['dark', 'light']:
+        return jsonify({'error': 'Invalid theme preference'}), 400
+
+    # Store the theme in the session
+    session['theme'] = theme
+
+    # Optionally, you can store it in a database or a file
+
+    return jsonify({'theme': theme}), 200
+
 
 @app.route('/get_favicon')
 def get_favicon():
     domain = request.args.get('domain')
-    theme = request.args.get('theme', 'light')
+    theme = request.args.get('theme', session.get('theme', 'light'))
     cache_key = f"favicon_{domain}_{theme}"
     cached_favicon = cache.get(cache_key)
     if cached_favicon:
@@ -76,92 +103,173 @@ def get_favicon():
         url = f"https://{domain}{path}"
         try:
             response = requests.get(url, timeout=2)
-            if response.status_code == 200:
-                cache.set(cache_key, (response.content, response.headers.get('Content-Type', 'image/x-icon')))
-                return send_file(BytesIO(response.content), mimetype=response.headers.get('Content-Type', 'image/x-icon'))
-          
+            if response.status_code == 200 and 'image' in response.headers.get('Content-Type', ''):
+                cache.set(cache_key, (response.content, response.headers.get('Content-Type')))
+                return send_file(BytesIO(response.content), mimetype=response.headers.get('Content-Type'))
         except requests.RequestException:
             continue
-    #set cache as local asset 'static/default', 'favicon.png'
+    # domain = request.args.get('domain')
+    cache_key = f"favicon_{domain}"
+    cached_favicon = cache.get(cache_key)
+    if cached_favicon:
+        cached_content, cached_mimetype = cached_favicon
+        return send_file(BytesIO(cached_content), mimetype=cached_mimetype)
+
+    try:
+        response = requests.get(f"https://{domain}", timeout=2)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            icon_links = soup.find_all('link', rel=lambda x: x and 'icon' in x.lower())
+
+            for link in icon_links:
+                href = link.get('href')
+                if href:
+                    if href.startswith('//'):
+                        icon_url = 'https:' + href
+                    elif href.startswith('http'):
+                        icon_url = href
+                    else:
+                        icon_url = f'https://{domain}/{href.lstrip("/")}'
+                    try:
+                        icon_response = requests.get(icon_url, timeout=2)
+                        if icon_response.status_code == 200:
+                            content_type = icon_response.headers.get('Content-Type', 'image/x-icon')
+                            cache.set(cache_key, (icon_response.content, content_type))
+                            return send_file(BytesIO(icon_response.content), mimetype=content_type)
+                    except requests.RequestException:
+                        continue
+    except requests.RequestException:
+        pass
+
+    # Fallback to default favicon
     with open(os.path.join('static', 'default', 'favicon.png'), 'rb') as f:
-        cache.set(cache_key, (f.read(), 'image/png'))
-    return send_from_directory('static/default', 'favicon.png')
+        content = f.read()
+        cache.set(cache_key, (content, 'image/png'))
+        return send_file(BytesIO(content), mimetype='image/png')
+
+
+
+# @app.route('/get_favicon')
+# def get_favicon():
+#     domain = request.args.get('domain')
+#     cache_key = f"favicon_{domain}"
+#     cached_favicon = cache.get(cache_key)
+#     if cached_favicon:
+#         cached_content, cached_mimetype = cached_favicon
+#         return send_file(BytesIO(cached_content), mimetype=cached_mimetype)
+
+#     try:
+#         response = requests.get(f"https://{domain}", timeout=2)
+#         if response.status_code == 200:
+#             soup = BeautifulSoup(response.content, 'html.parser')
+#             icon_links = soup.find_all('link', rel=lambda x: x and 'icon' in x.lower())
+
+#             for link in icon_links:
+#                 href = link.get('href')
+#                 if href:
+#                     if href.startswith('//'):
+#                         icon_url = 'https:' + href
+#                     elif href.startswith('http'):
+#                         icon_url = href
+#                     else:
+#                         icon_url = f'https://{domain}/{href.lstrip("/")}'
+#                     try:
+#                         icon_response = requests.get(icon_url, timeout=2)
+#                         if icon_response.status_code == 200:
+#                             content_type = icon_response.headers.get('Content-Type', 'image/x-icon')
+#                             cache.set(cache_key, (icon_response.content, content_type))
+#                             return send_file(BytesIO(icon_response.content), mimetype=content_type)
+#                     except requests.RequestException:
+#                         continue
+#     except requests.RequestException:
+#         pass
+
+#     # Fallback to default favicon
+#     with open(os.path.join('static', 'default', 'favicon.png'), 'rb') as f:
+#         content = f.read()
+#         cache.set(cache_key, (content, 'image/png'))
+#         return send_file(BytesIO(content), mimetype='image/png')
+    
 
 @app.route('/api/tags', methods=['GET'])
 @login_required
 def get_tags():
-    search_query = request.args.get('search', '').lower()
-    active_tags = request.args.getlist('tags')
+    def build_tag_tree(parent_id=None):
+        tags = Tag.query.filter_by(parent_id=parent_id).all()
+        tags_data = []
+        for tag in tags:
+            count = get_tag_shortcut_count(tag)
+            tags_data.append({
+                'id': tag.id,
+                'name': tag.name,
+                'count': get_tag_shortcut_count(tag),
+                'children': build_tag_tree(tag.id)
+            })
+        return tags_data
 
-    # Start with the root tags if no active tags
-    if not active_tags:
-        tags = Tag.query.filter_by(parent=None).all()
-    else:
-        # Get the last active tag to fetch its children
-        last_active_tag_name = active_tags[-1]
-        last_active_tag = Tag.query.filter_by(name=last_active_tag_name).first()
-        tags = last_active_tag.children.all() if last_active_tag else []
+    tag_tree = build_tag_tree()
+    return jsonify(tag_tree)
 
-    # Build tags data with counts
-    tags_data = []
-    for tag in tags:
-        count_query = db.session.query(func.count(Shortcut.id)).join(shortcut_tag).join(Tag).filter(
-            Shortcut.user_id == current_user.id,
-            Tag.id == tag.id
-        )
+def get_tag_shortcut_count(tag):
+    # Get all descendant tag IDs
+    def get_descendant_ids(tag):
+        ids = [tag.id]
+        for child in tag.children:
+            ids.extend(get_descendant_ids(child))
+        return ids
 
-        # Apply search query if present
-        if search_query:
-            count_query = count_query.filter(
-                (Shortcut.name.ilike(f'%{search_query}%')) |
-                (Shortcut.link.ilike(f'%{search_query}%')) |
-                (Shortcut.short_description.ilike(f'%{search_query}%'))
-            )
+    tag_ids = get_descendant_ids(tag)
+    count = Shortcut.query.join(Shortcut.tags).filter(
+        Shortcut.user_id == current_user.id,
+        Tag.id.in_(tag_ids)
+    ).count()
+    return count
 
-        count = count_query.scalar()
-        tags_data.append({
-            'id': tag.id,
-            'name': tag.name,
-            'count': count
-        })
 
-    return jsonify(tags_data), 200
+def get_descendant_tag_ids(tag):
+    ids = [tag.id]
+    for child in tag.children:
+        ids.extend(get_descendant_tag_ids(child))
+    return ids
+
 
 @app.route('/api/shortcuts', methods=['GET'])
 @login_required
 def get_shortcuts():
     search_query = request.args.get('search', '').lower()
     sort_by = request.args.get('sort_by', 'date_added')
-    filter_tags = request.args.getlist('tags')
+    filter_tag_ids = request.args.getlist('tags', type=int)
+    domain_filter = request.args.get('domain', '').lower()
     favorited_first = request.args.get('favorited_first', 'false').lower() == 'true'
 
-    shortcuts_query = Shortcut.query.filter_by(user_id=current_user.id)
+    # Start building the query
+    shortcuts_query = Shortcut.query.filter(Shortcut.user_id == current_user.id)
 
+    # Apply search filter
     if search_query:
-        shortcuts_query = shortcuts_query.filter(
-            (Shortcut.name.ilike(f'%{search_query}%')) |
-            (Shortcut.link.ilike(f'%{search_query}%')) |
-            (Shortcut.short_description.ilike(f'%{search_query}%'))
+        search_pattern = f"%{search_query}%"
+        shortcuts_query = shortcuts_query.outerjoin(Shortcut.tags).filter(
+            db.or_(
+                func.lower(Shortcut.name).like(search_pattern),
+                func.lower(Shortcut.link).like(search_pattern),
+                func.lower(Shortcut.short_description).like(search_pattern),
+                func.lower(Tag.name).like(search_pattern)
+            )
         )
 
-    if filter_tags:
-        selected_tags = Tag.query.filter(Tag.name.in_(filter_tags)).all()
-        tag_ids = set()
+    # Apply domain filter
+    if domain_filter:
+        domain_pattern = f"%{domain_filter}%"
+        shortcuts_query = shortcuts_query.filter(func.lower(Shortcut.link).like(domain_pattern))
 
-        def get_all_descendant_tag_ids(tag):
-            tag_ids.add(tag.id)
-            for child in tag.children:
-                get_all_descendant_tag_ids(child)
+    # Apply tag filters
+    if filter_tag_ids:
+        shortcuts_query = shortcuts_query.join(Shortcut.tags).filter(Tag.id.in_(filter_tag_ids))
 
-        for tag in selected_tags:
-            get_all_descendant_tag_ids(tag)
+    # Remove duplicates caused by joins
+    shortcuts_query = shortcuts_query.distinct()
 
-        shortcuts_query = shortcuts_query.join(Shortcut.tags).filter(Tag.id.in_(tag_ids))
-
-    if favorited_first:
-        shortcuts_query = shortcuts_query.order_by(Shortcut.favorited.desc())
-
-
+    # Apply sorting
     if sort_by == 'alphabetical':
         shortcuts_query = shortcuts_query.order_by(Shortcut.name)
     elif sort_by == 'date_updated':
@@ -173,32 +281,24 @@ def get_shortcuts():
     else:
         shortcuts_query = shortcuts_query.order_by(Shortcut.date_added.desc())
 
+    # Fetch the shortcuts
     shortcuts = shortcuts_query.all()
 
+    # Handle pinned shortcuts
     pinned = [s for s in shortcuts if s.pinned]
     not_pinned = [s for s in shortcuts if not s.pinned]
     shortcuts = pinned + not_pinned
 
-    shortcuts_list = []
-    for shortcut in shortcuts:
-        shortcut_dict = {
-            'id': shortcut.id,
-            'name': shortcut.name,
-            'link': shortcut.link,
-            'emojis': shortcut.emojis,
-            'color_from': shortcut.color_from,
-            'color_to': shortcut.color_to,
-            'short_description': shortcut.short_description,
-            'pinned': shortcut.pinned,
-            'favorited': shortcut.favorited,
-            'score': shortcut.score,
-            'tags': [tag.name for tag in shortcut.tags],
-            'date_added': shortcut.date_added.isoformat() if shortcut.date_added else None,
-            'date_updated': shortcut.date_updated.isoformat() if shortcut.date_updated else None
-        }
-        shortcuts_list.append(shortcut_dict)
+    # Optionally bring favorited items to the top
+    if favorited_first:
+        favorited = [s for s in shortcuts if s.favorited]
+        not_favorited = [s for s in shortcuts if not s.favorited]
+        shortcuts = favorited + not_favorited
 
-    return jsonify(shortcuts_list), 200
+    # Build the list to return
+    shortcuts_list = [shortcut.to_dict() for shortcut in shortcuts]
+
+    return jsonify(shortcuts_list)
 
 @app.route('/api/shortcuts/<shortcut_id>', methods=['PUT'])
 @login_required
@@ -244,6 +344,7 @@ def add_shortcut():
     if not all(field in data and data[field] for field in required_fields):
         return jsonify({'message': 'Missing required fields.'}), 400
 
+    
     tags = process_tags(data['tags'])
 
     shortcut = Shortcut(
@@ -302,18 +403,39 @@ def logout():
 
 def process_tags(tag_strings):
     tags = []
-    for tag_string in tag_strings:        
+    for tag_string in tag_strings:
         hierarchy = [t.strip() for t in tag_string.split('>') if t.strip()]
-        parent = None       
-        for tag_name in hierarchy:            
-            tag = Tag.query.filter_by(name=tag_name, parent=parent).first()            
-            if not tag:                
-                tag = Tag(name=tag_name, parent=parent)                
-                db.session.add(tag)                
-                db.session.flush()            
-                parent = tag        
-                tags.append(parent)    
-                return tags
+        parent = None
+        for tag_name in hierarchy:
+            tag = Tag.query.filter_by(name=tag_name, parent=parent).first()
+            if not tag:
+                tag = Tag(name=tag_name, parent=parent)
+                db.session.add(tag)
+                db.session.flush()
+            parent = tag
+        tags.append(parent)
+    return tags  # Moved 'return tags' outside the loops to process all tags
+
+@app.route('/api/domains', methods=['GET'])
+@login_required
+def get_domains():
+    shortcuts = Shortcut.query.filter_by(user_id=current_user.id).all()
+    domain_counts = {}
+    for shortcut in shortcuts:
+        parsed_url = urlparse(shortcut.link)
+        domain = parsed_url.netloc
+        if domain.startswith('www.'):
+            domain = domain[4:]
+        if domain in domain_counts:
+            domain_counts[domain]['count'] += 1
+            domain_counts[domain]['emojis'] += shortcut.emojis or ''
+        else:
+            domain_counts[domain] = {
+                'count': 1,
+                'emojis': shortcut.emojis or ''
+            }
+    domains = [{'domain': domain, 'count': data['count'], 'emojis': data['emojis']} for domain, data in domain_counts.items()]
+    return jsonify(domains)
             
 @app.route('/static/<path:filename>')            
 def custom_static(filename):    
@@ -322,4 +444,5 @@ def custom_static(filename):
 if __name__ == '__main__':    
     with app.app_context():        
         db.create_all()
+        # seed_database() 
         app.run(debug=True)

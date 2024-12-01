@@ -1,3 +1,25 @@
+let isCmdPressed = false;
+
+// Global key event listeners
+document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey) {
+        isCmdPressed = true;
+        document.querySelectorAll('.link-card:hover .action-items-container').forEach(container => {
+            container.classList.remove('opacity-0');
+        });
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    if (!e.metaKey && !e.ctrlKey) {
+        isCmdPressed = false;
+        document.querySelectorAll('.action-items-container').forEach(container => {
+            container.classList.add('opacity-0');
+        });
+    }
+});
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // Element references
     const searchInput = document.getElementById('searchInput');
@@ -7,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const favFilterContainer = document.getElementById('favoritedFilterContainer');
     const favoritedIcon = document.getElementById('favoritedIcon');
     const favoritedText = document.getElementById('favoritedText');
-    const tagsToolbar = document.getElementById('tagsToolbar');
+    const tagsToolbar = document.getElementById('tagsTree');
     const linksGrid = document.getElementById('linksGrid');
     const addLinkBtn = document.getElementById('addLinkBtn');
     const linkModal = document.getElementById('linkModal');
@@ -16,6 +38,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkForm = document.getElementById('linkForm');
     let selectedTags = []; // Keep track of selected tags
 
+ 
+
+    function debounce(func, delay) {
+        let debounceTimer;
+        return function() {
+          const context = this;
+          const args = arguments;
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => func.apply(context, args), delay);
+        };
+      }
+
+      
     // Form fields
     const linkIdField = document.getElementById('linkId');
     const linkNameField = document.getElementById('linkName');
@@ -30,7 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const favoritedField = document.getElementById('favorited');
     const saveLinkBtn = document.getElementById('saveLinkBtn');
 
-    let isCmdPressed = false; // Track if cmd/ctrl key is pressed
+
+    containerModal = document.getElementById('modal-container');
+
 
     // Sort dropdown functionality
     const sortButton = document.getElementById('sortButton');
@@ -40,6 +77,65 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkTagsInput = document.getElementById('linkTags');
     const tagsDropdown = document.getElementById('tagsDropdown');
 
+    // Function to determine theme preference
+    function getThemePreference() {
+        // Check if the user has set a specific preference in the browser
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const prefersLightScheme = window.matchMedia("(prefers-color-scheme: light)").matches;
+
+        // Here, you can define how to detect "automatic" if applicable.
+        // For simplicity, we'll assume if neither dark nor light is explicitly set, it's automatic.
+        let theme = 'automatic';
+
+        if (prefersDarkScheme) {
+            theme = 'dark';
+        } else if (prefersLightScheme) {
+            theme = 'light';
+        }
+
+        // If theme is automatic, determine OS-level preference (this is similar to what browsers do)
+        if (theme === 'automatic') {
+            // You might have additional logic here. For this example, we'll default to light.
+            // Alternatively, you can perform more complex checks or ask the user.
+            // Here, we'll re-check the OS preference
+            if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                theme = 'dark';
+            } else {
+                theme = 'light';
+            }
+        }
+
+        return theme;
+    }
+
+    // Send the theme to the server
+    function sendThemeToServer(theme) {
+        fetch('/set_theme', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ theme: theme })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Theme preference saved:', data.theme);
+            // Optionally, you can apply the theme immediately
+            applyTheme(data.theme);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+
+    // Function to apply the theme to the page
+    function applyTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+        // You can define CSS variables or classes based on the theme
+    }
+
+    const theme = getThemePreference();
+    sendThemeToServer(theme);
       // Event listener for linkTagsInput (Autocomplete)
       linkTagsInput.addEventListener('input', () => {
         const query = linkTagsInput.value.trim().split(/[,>]/).pop().trim();
@@ -56,12 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    // Event listener to hide tagsDropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!linkTagsInput.contains(e.target) && !tagsDropdown.contains(e.target)) {
-            tagsDropdown.classList.add('hidden');
-        }
-    });
+
 
     sortButton.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -88,118 +179,211 @@ document.addEventListener('DOMContentLoaded', () => {
     // Variables to keep track of active tags
     let activeTags = [];
 
-    // Update fetchShortcuts to fetch tags with current filters
-    function fetchShortcuts() {
-        const searchQuery = searchInput.value.toLowerCase();
-        const selectedTags = activeTags.map(tag => tag.name);
-
+    function fetchShortcuts(params = {}) {
         const searchParams = new URLSearchParams();
-        searchParams.set('search', searchQuery);
-        searchParams.set('sort_by', sortSelect.value);
-        searchParams.set('favorited_first', favoritedFirstCheckbox.checked);
-        selectedTags.forEach(tag => searchParams.append('tags', tag));
-
+    
+        // Add domain parameter if provided
+        if (params.domain) {
+            searchParams.append('domain', params.domain);
+        }
+    
+        // Search input
+        if (searchInput.value) {
+            searchParams.append('search', searchInput.value);
+        }
+    
+        // Sort selection
+        if (sortSelect.value) {
+            searchParams.append('sort_by', sortSelect.value);
+        }
+    
+        // Favorited filter
+        if (favoritedFirstCheckbox.checked) {
+            searchParams.append('favorited_first', 'true');
+        }
+    
+        // Selected tags
+        if (selectedTags.length > 0) {
+            selectedTags.forEach(tagId => {
+                searchParams.append('tags', tagId);
+            });
+        }
+    
         fetch(`/api/shortcuts?${searchParams.toString()}`)
             .then(response => response.json())
-            .then(data => {
-                displayShortcuts(data);
-                // Fetch tags after fetching shortcuts
-                fetchTags(searchParams);
+            .then(shortcuts => {
+                linksGrid.innerHTML = ''; // Clear previous results
+                displayShortcuts(shortcuts);
+            })
+            .catch(error => {
+                console.error('Error fetching shortcuts:', error);
             });
     }
-
+    document.querySelectorAll('.domain-filter').forEach(filter => {
+        filter.addEventListener('click', (e) => {
+            e.preventDefault();
+            const domain = filter.getAttribute('data-domain');
+            fetchShortcuts({ domain: domain });
+        });
+    });
     // Modify fetchTags to accept searchParams
-    function fetchTags(searchParams) {
-        fetch(`/api/tags?${searchParams.toString()}`)
-            .then(response => response.json())
-            .then(tags => {
-                srenderTags(tags);
-            });
-    }
+    // function fetchTags(searchParams) {
+    //     fetch(`/api/tags?${searchParams.toString()}`)
+    //         .then(response => response.json())
+    //         .then(tags => {
+    //             srenderTags(tags);
+    //         });
+    // }
 
 
 
     // Modify renderTags to implement hierarchical navigation
+    // function srenderTags(tagsData) {
+    //     tagsToolbar.innerHTML = '';
+
+    //     function renderTagLevel(tags, level) {
+    //         tags.forEach(tag => {
+    //             const tagContainer = document.createElement('div');
+    //             tagContainer.classList.add('flex', 'flex-shrink-0');
+
+    //             const tagLabel = document.createElement('label');
+    //             tagLabel.classList.add('tag-label', 'cursor-pointer');
+
+    //             const tagSpan = document.createElement('span');
+    //             tagSpan.className = 'text-xs font-mono';
+    //             tagSpan.textContent = `${tag.name} (${tag.count})`;
+
+    //             tagLabel.appendChild(tagSpan);
+    //             tagContainer.appendChild(tagLabel);
+
+    //             // Click event for the tag
+    //             tagLabel.addEventListener('click', () => {
+    //                 if (activeTags[level] && activeTags[level].id === tag.id) {
+    //                     // Deselect current tag and remove deeper levels
+    //                     activeTags = activeTags.slice(0, level);
+    //                 } else {
+    //                     // Select new tag and update activeTags
+    //                     activeTags = activeTags.slice(0, level);
+    //                     activeTags[level] = tag;
+    //                 }
+    //                 fetchShortcuts();
+    //                 srenderTags(tagsData); // Re-render tags
+    //             });
+
+    //             tagsToolbar.appendChild(tagContainer);
+
+    //             // If this tag is active, render children
+    //             if (activeTags[level] && activeTags[level].id === tag.id) {
+    //                 // Add chevron
+    //                 const chevron = document.createElement('span');
+    //                 chevron.textContent = ' > ';
+    //                 chevron.className = 'chevron';
+    //                 tagsToolbar.appendChild(chevron);
+
+    //                 // Render child tags
+    //                 if (tag.children && tag.children.length > 0) {
+    //                     renderTagLevel(tag.children, level + 1);
+    //                 }
+    //             }
+    //         });
+    //     }
+
+    //     // Start rendering from root level tags
+    //     if (activeTags.length === 0) {
+    //         renderTagLevel(tagsData, 0);
+    //     } else {
+    //         // Find the active path of tags
+    //         let currentTags = tagsData;
+    //         for (let i = 0; i < activeTags.length; i++) {
+    //             const activeTag = activeTags[i];
+    //             renderTagLevel([activeTag], i);
+    //             if (activeTag.children && activeTag.children.length > 0) {
+    //                 currentTags = activeTag.children;
+    //             } else {
+    //                 currentTags = [];
+    //             }
+    //         }
+    //         if (currentTags.length > 0) {
+    //             renderTagLevel(currentTags, activeTags.length);
+    //         }
+    //     }
+    // }
+
+    // function renderTagTree(tags, parentElement) {
+    //     const ul = document.createElement('ul');
+    //     ul.classList.add('tag-tree');
+    //     tags.forEach(tag => {
+    //         const li = document.createElement('li');
+    //         li.classList.add('tag-item');
+    
+    //         const tagLabel = document.createElement('span');
+    //         tagLabel.textContent = `${tag.name} (${tag.count})`;
+    //         tagLabel.classList.add('tag-label');
+    //         tagLabel.addEventListener('click', () => {
+    //             // Handle tag selection
+    //             handleTagClick(tag.id);
+    //         });
+    
+    //         li.appendChild(tagLabel);
+    
+    //         if (tag.children && tag.children.length > 0) {
+    //             const toggleButton = document.createElement('button');
+    //             toggleButton.textContent = '+';
+    //             toggleButton.classList.add('toggle-button');
+    //             toggleButton.addEventListener('click', () => {
+    //                 li.classList.toggle('expanded');
+    //             });
+    //             li.insertBefore(toggleButton, tagLabel);
+    
+    //             renderTagTree(tag.children, li);
+    //         }
+    
+    //         ul.appendChild(li);
+    //     });
+    //     parentElement.appendChild(ul);
+    // }
+    
+    
+    // Usage in srenderTags
     function srenderTags(tagsData) {
         tagsToolbar.innerHTML = '';
+        const tagList = document.createElement('ul');
+        tagList.classList.add('tag-tree');
+        renderTagTree(tagsData, tagList);
+        tagsToolbar.appendChild(tagList);
+    }
+    
+    // Event listeners
+    searchInput.addEventListener('input', debounce(() => {
+        fetchShortcuts();
+      }, 300));
 
-        function renderTagLevel(tags, level) {
-            tags.forEach(tag => {
-                const tagContainer = document.createElement('div');
-                tagContainer.classList.add('flex', 'flex-shrink-0');
+    sortSelect.addEventListener('change', () => {
+        fetchShortcuts();
+    });
 
-                const tagLabel = document.createElement('label');
-                tagLabel.classList.add('tag-label', 'cursor-pointer');
+    favoritedFirstCheckbox.addEventListener('change', () => {
+        fetchShortcuts();
+    });
 
-                const tagSpan = document.createElement('span');
-                tagSpan.className = 'text-xs font-mono';
-                tagSpan.textContent = `${tag.name} (${tag.count})`;
-
-                tagLabel.appendChild(tagSpan);
-                tagContainer.appendChild(tagLabel);
-
-                // Click event for the tag
-                tagLabel.addEventListener('click', () => {
-                    if (activeTags[level] && activeTags[level].id === tag.id) {
-                        // Deselect current tag and remove deeper levels
-                        activeTags = activeTags.slice(0, level);
-                    } else {
-                        // Select new tag and update activeTags
-                        activeTags = activeTags.slice(0, level);
-                        activeTags[level] = tag;
-                    }
-                    fetchShortcuts();
-                    srenderTags(tagsData); // Re-render tags
-                });
-
-                tagsToolbar.appendChild(tagContainer);
-
-                // If this tag is active, render children
-                if (activeTags[level] && activeTags[level].id === tag.id) {
-                    // Add chevron
-                    const chevron = document.createElement('span');
-                    chevron.textContent = ' > ';
-                    chevron.className = 'chevron';
-                    tagsToolbar.appendChild(chevron);
-
-                    // Render child tags
-                    if (tag.children && tag.children.length > 0) {
-                        renderTagLevel(tag.children, level + 1);
-                    }
-                }
-            });
-        }
-
-        // Start rendering from root level tags
-        if (activeTags.length === 0) {
-            renderTagLevel(tagsData, 0);
+    function handleTagSelection(tagId) {
+        const index = selectedTags.indexOf(tagId);
+        if (index > -1) {
+            selectedTags.splice(index, 1);
         } else {
-            // Find the active path of tags
-            let currentTags = tagsData;
-            for (let i = 0; i < activeTags.length; i++) {
-                const activeTag = activeTags[i];
-                renderTagLevel([activeTag], i);
-                if (activeTag.children && activeTag.children.length > 0) {
-                    currentTags = activeTag.children;
-                } else {
-                    currentTags = [];
-                }
-            }
-            if (currentTags.length > 0) {
-                renderTagLevel(currentTags, activeTags.length);
-            }
+            selectedTags.push(tagId);
         }
     }
+    closeModalBtn.addEventListener('click', () => {
 
-    // Adjust event listeners to refetch tags when filters change
-    searchInput.addEventListener('input', fetchShortcuts);
-
-
+        linkForm.reset();
+        closeModal();
+    });
     // Display shortcuts in the grid
     function displayShortcuts(shortcuts) {
         // Clear the grid with a fade-out effect
         linksGrid.querySelectorAll('article').forEach(article => {
-            article.classList.add('opacity-0', 'transition-all', 'duration-200');
+            article.classList.add('opacity-0');
             setTimeout(() => {
                 article.remove();
             }, 200);
@@ -210,10 +394,11 @@ document.addEventListener('DOMContentLoaded', () => {
             shortcuts.forEach(shortcut => {
                 // Create the <article> element
                 const article = document.createElement('article');
+                article.className = 'transition-all duration-200 opacity-0 link-card';
                 const averageLuminance = calculateAverageLuminance(shortcut.color_from, shortcut.color_to);
                 const textColor = 'text-white';
                 const overlayStrength = averageLuminance > 0.5 ? 'luminanceneg' : 'luminancepos' ;
-                article.className = 'transition-all duration-200 opacity-1 ';
+                article.className = 'transition-all duration-200 opacity-1  link-card ';
 
                 // Create the link card container
                 const linkCard = document.createElement('a');
@@ -327,7 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Short description (if present)
                 if (shortcut.short_description) {
                    
-                    const svgDecor = `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15" viewBox="0 0 16 12"><path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0 0-4.97 1.2-6.51 6.13Z"></path></svg>`
+                    const svgDecor = `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15" viewBox="0 0 16 12"><path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0-4.97 1.2-6.51 6.13Z"></path></svg>`
                    
                     descriptionDiv.innerHTML= svgDecor;
                     descriptionText.className = `bg-black/15 transition-all duration-200 leading-tight `;
@@ -342,33 +527,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const iconsContainer = document.createElement('span');
-                iconsContainer.classList.add('shortcut-icons-container', 'flex', 'gap-2', 'absolute', 'top-2', 'left-2', 'opacity-100', 'transition-opacity', 'text-lg', 'duration-200');
-                
+                iconsContainer.classList.add('shortcut-icons-container', 'gap-2', 'absolute', 'top-2', 'left-2', 'transition-opacity', 'text-lg', 'duration-200');
+                iconsContainerFlex = document.createElement('div');
+                iconsContainerFlex.classList.add('flex', 'gap-2','transition-opacity', 'text-lg', 'duration-200');
             if (shortcut.pinned) {
                 const pinnedIcon = document.createElement('i');
                 pinnedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md  fa-bookmark  text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
               
-                iconsContainer.appendChild(pinnedIcon);
+                iconsContainerFlex.appendChild(pinnedIcon);
             }
-            if (!shortcut.pinned) {
+            else if (!shortcut.pinned) {
                 const pinnedIcon = document.createElement('i');
-                pinnedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md opacity-0 absolute fa-bookmark-o  text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                pinnedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md  fa-bookmark-o opacity-40 text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
               
-                iconsContainer.appendChild(pinnedIcon);
+                iconsContainerFlex.appendChild(pinnedIcon);
             }
             if (shortcut.favorited) {
                 const favoritedIcon = document.createElement('i');
-                favoritedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md  fa-heart text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                favoritedIcon.className = 'pinned-icon  fa fa-solid drop-shadow-md  fa-heart text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
               
-                iconsContainer.appendChild(favoritedIcon);
+                iconsContainerFlex.appendChild(favoritedIcon);
             }
-            if (!shortcut.favorited) {
+            else if (!shortcut.favorited) {
                 const favoritedIcon = document.createElement('i');
-                favoritedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md opacity-0 absolute  fa-heart-o text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
+                favoritedIcon.className = 'pinned-icon  fa fa-solid drop-shadow-md   fa-heart-o opacity-40 text-white cursor-pointer hover:text-indigo-100 transition-opacity duration-200';
               
-                iconsContainer.appendChild(favoritedIcon);
-            }
-
+                iconsContainerFlex.appendChild(favoritedIcon);
+            }   
+            iconsContainer.appendChild(iconsContainerFlex);
                 // Trash icon for deletion
                 const ActionIconsWR = document.createElement('span');
                 const trashIcon = document.createElement('i');
@@ -403,11 +589,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     emojiSpan.classList.add('opacity-100');
 
                 });
+               
 
                 linkCard.addEventListener('mouseleave', () => {
-                    if (isCmdPressed) {
-                        trashIcon.classList.add('opacity-0');
-                    }
+                    
+                        ActionIconsWR.classList.add('opacity-0');
+                    
                     iconContainer.classList.add('opacity-0');
                     statusBadgeContainer.classList.add('opacity-0');
                     iconContainer.classList.remove('opacity-80');
@@ -421,29 +608,58 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 200);
                 });
 
-                // Update trash icon visibility on keydown and keyup
-                window.addEventListener('keydown', (e) => {
-                    if (e.metaKey || e.ctrlKey) {
-                        isCmdPressed = true;
-                        if (linkCard.matches(':hover')) {
-                            trashIcon.classList.remove('opacity-0');
-                            editIcon.classList.remove('opacity-0');
-                        }
-                    }
-                });
-
-                window.addEventListener('keyup', (e) => {
-                    if (!e.metaKey && !e.ctrlKey) {
-                        isCmdPressed = false;
-                        trashIcon.classList.add('opacity-0');
-                        editIcon.classList.add('opacity-0');
-                    }
-                });
-
-                trashIcon.addEventListener('click', (e) => {
-                    // e.preventDefault();
+                       // Action confirmation handlers
+            trashIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Are you sure you want to delete this shortcut?')) {
                     deleteShortcut(shortcut.id);
-                });
+                }
+            });
+
+            editIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Do you want to edit this shortcut?')) {
+                    openModal(shortcut);
+                }
+            });
+
+            // Add confirmation to favorite/pin actions
+            iconsContainer.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const target = e.target;
+                
+                if (target.classList.contains('fa-heart') || target.classList.contains('fa-heart-o')) {
+                    if (confirm('Do you want to change the favorite status of this shortcut?')) {
+                        // Toggle favorite status
+                        fetch(`/api/shortcuts/${shortcut.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                ...shortcut,
+                                favorited: !shortcut.favorited
+                            })
+                        }).then(() => fetchShortcuts());
+                    }
+                }
+                
+                if (target.classList.contains('fa-bookmark') || target.classList.contains('fa-bookmark-o')) {
+                    if (confirm('Do you want to change the pinned status of this shortcut?')) {
+                        // Toggle pinned status
+                        fetch(`/api/shortcuts/${shortcut.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                ...shortcut,
+                                pinned: !shortcut.pinned
+                            })
+                        }).then(() => fetchShortcuts());
+                    }
+                }
+            });
 
                 // Click event for emoji animation and navigation
                 linkCard.addEventListener('click', (event) => {
@@ -605,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 emojiElement.style.fontSize = '48px';
                 emojiElement.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
                 emojiElement.style.pointerEvents = 'none';
-                // document.body.appendChild(emojiElement);
+                document.body.appendChild(emojiElement);
 
                 let scale = Math.random() * 0.7 + 0.3;
                 let rotation = Math.random() * 360;
@@ -656,63 +872,120 @@ document.addEventListener('DOMContentLoaded', () => {
             document.head.appendChild(style);
         }
     }
+ // Fetch and render tags
+ 
+function fetchTags() {
+    fetch('/api/tags')
+    .then(response => response.json())
+    .then(data => {
+        srenderTags(data);
+    })
+    .catch(error => {
+        console.error('Error fetching tags:', error);
+    });
+}
 
-    function fetchTags() {
-        fetch('/api/tags')
-            .then(response => response.json())
-            .then(tags => {
-                srenderTags(tags);
-            });
-    }
+function renderTagTree(tags, container, level = 0) {
+    tags.forEach(tag => {
+        const tagItemWrap = document.createElement('div');
+        tagItemWrap.className = 'flex  justify-start';
 
-    function renderTags(tagsData) {
-        tagsToolbar.innerHTML = '';
-        tagsData.forEach(tag => {
-            const tagContainer = document.createElement('div');
-            tagContainer.classList.add('flex', 'flex-shrink-0');
+        const tagItem = document.createElement('div');
+        tagItem.className = 'flex items-start flex-grow justify-between ';
+        tagItem.style.paddingLeft = `${level * 20}px`;
 
-            const tagLabel = document.createElement('label');
-            tagLabel.classList.add('flex', 'bg-gradient-to-br', 'hover:opacity-100', 'rounded-lg', 'from-gray-300', 'to-transparent', 'items-center', 'gap-1', 'px-2', 'py-2', 'cursor-pointer', 'transition-all', 'duration-200');
+        
+            const svg = document.createElement('span');
+            svg.innerHTML = '<svg class="text-gray-300 dark:text-gray-700" width="19" height="28" viewBox="0 0 19 28" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M1 0C1 7.42391 7.4588 13.5 15.5 13.5V14.5C6.9726 14.5 0 8.04006 0 0H1Z" fill="currentColor"></path></svg>';
+            tagItemWrap.appendChild(svg);
+        
 
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.classList.add('hidden');
-            checkbox.value = tag.name;
-            checkbox.checked = selectedTags.includes(tag.name);
-            checkbox.addEventListener('change', () => {
-                if (checkbox.checked) {
-                    tagLabel.classList.remove('opacity-30');
-                    selectedTags.push(tag.name);
-                } else {
-                    selectedTags = selectedTags.filter(t => t !== tag.name);
-                    tagLabel.classList.add('opacity-30');
-                }
-                fetchShortcuts();
-                srenderTags(tagsData);
-            });
+        const tagName = document.createElement('div');
+        tagName.innerHTML = `<a href="#" data-tag-id="${tag.id}" class=" font-mono  text-indigo-600 dark:text-indigo-300 tag-link text-xs">${tag.name}</a>`;
+       
+        tagItem.appendChild(tagName);
 
-            if (checkbox.checked) {
-                tagLabel.classList.add('bg-gradient-to-br', 'from-blue-500', 'to-blue-900', 'text-white');
-                tagLabel.classList.remove('opacity-30');
-            } else {
-                tagLabel.classList.add('dark:from-gray-800', 'dark:text-white');
-            }
-
-            const tagSpan = document.createElement('span');
-            tagSpan.className = 'text-xs font-mono cursor-pointer';
-            tagSpan.textContent = `${tag.name} `;
-
+        if (tag.count) {
             const tagCount = document.createElement('span');
-            tagCount.className = 'px-2 items-center rounded-xl text-xs text-gray-100 font-bold inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/10 leading-tight opacity-80 hover:opacity-30 transition-opacity duration-200';
-            tagCount.textContent = `${tag.count} `;
+            tagCount.className = 'ml-1 text-gray-600 dark:text-gray-400';
+            tagCount.innerHTML = `(<span>${tag.count}</span>)`;
+            tagItem.appendChild(tagCount);
+        }
+            // Add event delegation for tag links
+            tagItem.addEventListener('click', (e) => {
+                if (e.target.classList.contains('tag-link')) {
+                    e.preventDefault();
+                    const tagId = e.target.dataset.tagId;
+                    if (tagId) {
+                        handleTagSelection(parseInt(tagId));
+                        // Toggle selected state visually
+                        e.target.classList.toggle('selected');
+                        // fetchShortcuts();
+                        fetchTags();
+                    }
+                }
+            });
 
-            tagLabel.appendChild(checkbox);
-            tagLabel.appendChild(tagSpan);
-            tagLabel.appendChild(tagCount);
-            tagContainer.appendChild(tagLabel);
-            tagsToolbar.appendChild(tagContainer);
+        
+            
+        tagItemWrap.appendChild(tagItem);
+        container.appendChild(tagItemWrap);
+
+        // Recursively render child tags
+        if (tag.children && tag.children.length > 0) {
+            renderTagTree(tag.children, container, level + 1);
+        }
+    });
+}
+
+function renderTags(tagsData) {
+    tagsToolbar.innerHTML = '';
+
+    function createTagElement(tag) {
+        const tagItem = document.createElement('div');
+        tagItem.classList.add('tag-item');
+
+        const tagLabel = document.createElement('label');
+        tagLabel.classList.add('tag-label', 'cursor-pointer');
+        tagLabel.textContent = `${tag.name} (${tag.count})`;
+
+        tagLabel.addEventListener('click', () => {
+            handleTagSelection(tag.id);
+            tagLabel.classList.toggle('selected');
         });
+
+        tagItem.appendChild(tagLabel);
+
+        if (tag.children && tag.children.length > 0) {
+            const childTagsContainer = document.createElement('div');
+            childTagsContainer.classList.add('child-tags');
+
+            tag.children.forEach(childTag => {
+                const childTagItem = createTagElement(childTag);
+                childTagsContainer.appendChild(childTagItem);
+            });
+
+            tagItem.appendChild(childTagsContainer);
+        }
+
+        return tagItem;
     }
+
+    tagsData.forEach(tag => {
+        const tagElement = createTagElement(tag);
+        tagsToolbar.appendChild(tagElement);
+    });
+}
+
+function handleTagSelection(tagId) {
+    const index = selectedTags.indexOf(tagId);
+    if (index > -1) {
+        selectedTags.splice(index, 1);
+    } else {
+        selectedTags.push(tagId);
+    }
+    fetchShortcuts();
+}
 
     function renderTagsDropdown(tags) {
         tagsDropdown.innerHTML = '';
@@ -759,91 +1032,112 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Toggle favorite status using the icon
     favFilterContainer.addEventListener('click', (e) => {
-
         e.preventDefault();
         favoritedFirstCheckbox.checked = !favoritedFirstCheckbox.checked;
+        
         if (favoritedFirstCheckbox.checked) {
+            
             favoritedIcon.classList.remove('fa-heart-o', 'text-indigo-700');
-            favoritedIcon.classList.add('fa-heart', 'text-white');  
-            favFilterContainer.classList.add('dark:from-red-600');
-            favFilterContainer.classList.add('dark:to-red-400');
+            favoritedIcon.classList.add('fa-heart', 'text-white');
+            favFilterContainer.classList.add('dark:from-red-600', 'dark:to-red-400');
             favoritedText.classList.remove('dark:from-indigo-950');
-            // favFilterContainer.classList.remove('bg-gradient-to-br', 'from-red-100', 'to-white', 'dark:from-red-50', 'dark:to-red-100');
-          
             favoritedText.classList.remove('text-indigo-700');
             favoritedText.classList.add('text-white');
+            
+            fetchShortcuts();
+            // Update opacity for all shortcuts
+            document.querySelectorAll('.link-card').forEach(card => {
+                const isFavorited = card.querySelector('.fa-heart') !== null;
+                card.style.opacity = isFavorited ? '1' : '0.5';
+            });
         } else {
             favoritedIcon.classList.remove('fa-heart', 'text-white');
             favoritedIcon.classList.add('fa-heart-o', 'text-red-700');
-            favFilterContainer.classList.remove('bg-red-500');
-            // favFilterContainer.classList.add('bg-gradient-to-br', 'from-red-100', 'to-white', 'dark:from-red-50', 'dark:to-red-100');
+            favFilterContainer.classList.remove('dark:from-red-600', 'dark:to-red-400');
             favoritedText.classList.remove('text-white');
             favoritedText.classList.add('text-red-700');
+            
+            fetchShortcuts(favoritedFirstCheckbox.checked);
+            // Reset opacity for all shortcuts
+            document.querySelectorAll('article.link-card').forEach(card => {
+                card.style.opacity = '1';
+            });
         }
-        fetchShortcuts();
         
+        // fetchShortcuts();
     });
+    
 
     // Open modal for adding/editing
-    addLinkBtn.addEventListener('click', () => openModal('Add Link Shortcut'));
+    addLinkBtn.addEventListener('click', () => openModal());
 
     // Close modal
-    closeModalBtn.addEventListener('click', closeModal);
+    // closeModalBtn.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => {
         if (event.target === ContainerModal) {
             closeModal();
         }
     });
 
-    linkForm.addEventListener('submit', (event) => {
-        event.preventDefault();
-        const id = linkIdField.value;
-        const shortcut = {
-            name: linkNameField.value.trim(),
-            link: linkUrlField.value.trim(),
-            tags: linkTagsField.value.trim().split(',').map(tag => tag.trim()).filter(tag => tag),
-            emojis: linkEmojisField.value.trim(),
-            color_from: hexToRgba(colorFromField.value),
-            color_to: hexToRgba(colorToField.value),
-            short_description: shortDescriptionField.value.trim(),
-            score: parseFloat(scoreField.value) || 0.0,
+     // Handle form submission
+     linkForm.addEventListener('submit', (e) => {
+        e.preventDefault(); // Prevent default form submission
+        
+        const shortcutData = {
+            id: linkIdField.value,
+            name: linkNameField.value,
+            link: linkUrlField.value,
+            tags: linkTagsField.value.split(',').map(tag => tag.trim()),
+            emojis: linkEmojisField.value,
+            color_from: colorFromField.value,
+            color_to: colorToField.value,
+            short_description: shortDescriptionField.value,
+            score: parseFloat(scoreField.value) || 0,
             pinned: pinnedField.checked,
             favorited: favoritedField.checked
         };
-
-        const url = id ? `/api/shortcuts/${id}` : '/api/shortcuts';
-        const method = id ? 'PUT' : 'POST';
-
+    
+        const method = shortcutData.id ? 'PUT' : 'POST';
+        const url = shortcutData.id ? `/api/shortcuts/${shortcutData.id}` : '/api/shortcuts';
+    
         fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(shortcut)
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(shortcutData)
         })
-            .then(response => {
-                if (response.ok) {
-                    closeModal();
-                    fetchShortcuts();
-                } else {
-                    console.error('Failed to save shortcut');
-                }
-            })
-            .catch(error => console.error('Error saving shortcut:', error));
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Success:', data);
+            closeModal();
+            fetchShortcuts();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving shortcut: ' + error.message);
+        });
     });
-
+   
     // Delete shortcut
     function deleteShortcut(id) {
         if (confirm('Are you sure you want to delete this link shortcut?')) {
-            fetch(`/api/shortcuts/${id}`, { method: 'DELETE' })
-                .then(response => {
-                    if (response.ok) {
-                        fetchShortcuts();
-                    } else {
-                        console.error('Failed to delete shortcut');
-                    }
+            fetch(`/api/shortcuts/${id}`, {
+                method: 'DELETE',
+            })
+                .then(response => response.json())
+                .then(data => {
+                    fetchShortcuts();
                 })
-                .catch(error => console.error('Error deleting shortcut:', error));
+                .catch(error => {
+                    console.error('Error deleting shortcut:', error);
+                });
         }
     }
 
@@ -876,33 +1170,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const b = bigint & 255;
         return `rgba(${r}, ${g}, ${b}, 1)`;
     }
-
-    // Close modal function
-    function closeModal() {
-        ContainerModal.classList.add('hidden');
-    }
-
-    // Open modal function
-    function openModal(title, shortcut = null) {
-        document.getElementById('modalTitle').textContent = title;
-        linkForm.reset();
+    function openModal(shortcut = null) {
         if (shortcut) {
+            // Editing existing shortcut
             linkIdField.value = shortcut.id;
             linkNameField.value = shortcut.name;
             linkUrlField.value = shortcut.link;
             linkTagsField.value = shortcut.tags.join(', ');
             linkEmojisField.value = shortcut.emojis;
-            colorFromField.value = rgbToHex(shortcut.color_from);
-            colorToField.value = rgbToHex(shortcut.color_to);
+            colorFromField.value = shortcut.color_from;
+            colorToField.value = shortcut.color_to;
             shortDescriptionField.value = shortcut.short_description;
             scoreField.value = shortcut.score;
             pinnedField.checked = shortcut.pinned;
             favoritedField.checked = shortcut.favorited;
         } else {
+            // Adding new shortcut
+            linkForm.reset();
             linkIdField.value = '';
         }
-        ContainerModal.classList.remove('hidden');
+        containerModal.classList.remove('hidden');
     }
+
+    function closeModal() {
+        linkForm.reset();
+        linkIdField.value = '';
+        containerModal.classList.add('hidden');
+    }
+
       // Function to calculate average luminance of two colors
       function calculateAverageLuminance(color1, color2) {
         const luminance1 = getLuminance(color1);
@@ -928,43 +1223,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
         // Event listeners
-        searchInput.addEventListener('input', fetchShortcuts);
+        // searchInput.addEventListener('input', fetchShortcuts);
         // selectedSort.addEventListener('click', fetchShortcuts);
     
        
     // Fetch initial data
-    fetchShortcuts();
-    fetchTags();
 
     // Enable dragging to scroll on tagsToolbar
-    let isDragging = false;
-    let startX;
-    let scrollLeft;
+    // let isDragging = false;
+    // let startX;
+    // let scrollLeft;
 
-    tagsToolbar.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        tagsToolbar.classList.add('dragging');
-        startX = e.pageX - tagsToolbar.offsetLeft;
-        scrollLeft = tagsToolbar.scrollLeft;
-    });
+    // tagsToolbar.addEventListener('mousedown', (e) => {
+    //     isDragging = true;
+    //     tagsToolbar.classList.add('dragging');
+    //     startX = e.pageX - tagsToolbar.offsetLeft;
+    //     scrollLeft = tagsToolbar.scrollLeft;
+    // });
 
-    tagsToolbar.addEventListener('mouseleave', () => {
-        isDragging = false;
-        tagsToolbar.classList.remove('dragging');
-    });
+    // tagsToolbar.addEventListener('mouseleave', () => {
+    //     isDragging = false;
+    //     tagsToolbar.classList.remove('dragging');
+    // });
 
-    tagsToolbar.addEventListener('mouseup', () => {
-        isDragging = false;
-        tagsToolbar.classList.remove('dragging');
-    });
+    // tagsToolbar.addEventListener('mouseup', () => {
+    //     isDragging = false;
+    //     tagsToolbar.classList.remove('dragging');
+    // });
 
-    tagsToolbar.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        e.preventDefault();
-        const x = e.pageX - tagsToolbar.offsetLeft;
-        const walk = (x - startX) * 1; // Adjust scroll speed
-        tagsToolbar.scrollLeft = scrollLeft - walk;
-    });
+    // tagsToolbar.addEventListener('mousemove', (e) => {
+    //     if (!isDragging) return;
+    //     e.preventDefault();
+    //     const x = e.pageX - tagsToolbar.offsetLeft;
+    //     const walk = (x - startX) * 1; // Adjust scroll speed
+    //     tagsToolbar.scrollLeft = scrollLeft - walk;
+    // });
 
     // Fetch and render tags
     fetch('/api/tags')
@@ -977,4 +1270,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
   
+        fetchShortcuts();
+        fetchTags();
 });
