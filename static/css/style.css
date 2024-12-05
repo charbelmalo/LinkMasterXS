@@ -23527,7 +23527,7 @@ input.color {
 }
 
 /* Option 1: Dark Overlay on Hover */
-.link-card::before {
+.link-card a::before {
   content: '';
   position: absolute;
   top: 0;
@@ -23541,14 +23541,14 @@ input.color {
   transition: all 200ms linear !important;
 }
 
-.link-card:hover::before {
-  background: rgba(0, 0, 0, 0.1);
+.link-card:hover a::before {
+  background: rgba(0, 0, 0, 0.2);
 }
-.link-card.luminancepos:hover::before {
+.link-card.luminancepos:hover a::before {
   background: rgba(255,255,255, 0.05);
 }
 
-.link-card.luminanceneg:hover::before {
+.link-card.luminanceneg:hover a::before {
   background: rgba(0, 0, 0, 0.2);
 }
 .brightness-120{
@@ -23576,3 +23576,4 @@ filter: brightness(var(--tw-brightness));
     .transition-all-200{
       transition: all 2s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    

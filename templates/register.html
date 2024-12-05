@@ -14,7 +14,7 @@
             theme: {
                 extend: {
                     colors: {
-                        zinc: colors.zinc,
+                        slate: colors.slate,
                     },
                 },
             },
@@ -36,7 +36,7 @@
     <div class="flex items-center justify-center min-h-screen">
         <div class="w-full max-w-md p-8 space-y-8">
             <div>
-                <h2 class="mt-6 text-center text-3xl font-extrabold text-zinc-600 dark:text-zinc-400">
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-600 dark:text-slate-400">
                     Register for your account
                 </h2>
             </div>
@@ -45,31 +45,31 @@
                     <div>
                         <label for="username" class="sr-only">Username</label>
                         <input id="username" name="username" type="text" autocomplete="username" required
-                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 rounded-t-md focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
+                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 rounded-t-md focus:outline-none focus:ring-slate-500 focus:border-slate-500 focus:z-10 sm:text-sm"
                             placeholder="Username">
                     </div>
                     <div>
                         <label for="email-address" class="sr-only">Email address</label>
                         <input id="email-address" name="email" type="email" autocomplete="email" required
-                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
+                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 focus:outline-none focus:ring-slate-500 focus:border-slate-500 focus:z-10 sm:text-sm"
                             placeholder="Email address">
                     </div>
                     <div>
                         <label for="password" class="sr-only">Password</label>
                         <input id="password" name="password" type="password" autocomplete="new-password" required
-                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 rounded-b-md focus:outline-none focus:ring-zinc-500 focus:border-zinc-500 focus:z-10 sm:text-sm"
+                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 rounded-b-md focus:outline-none focus:ring-slate-500 focus:border-slate-500 focus:z-10 sm:text-sm"
                             placeholder="Password">
                     </div>
                 </div>
                 <div>
                     <button type="submit"
-                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-zinc-600 dark:bg-zinc-500 hover:bg-zinc-700 dark:hover:bg-zinc-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-500">
+                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-slate-600 dark:bg-slate-500 hover:bg-slate-700 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
                         Register
                     </button>
                 </div>
             </form>
             <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-                Already have an account? <a href="{{ url_for('login') }}" class="font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-300">Login here</a>.
+                Already have an account? <a href="{{ url_for('login') }}" class="font-medium text-slate-600 dark:text-slate-400 hover:text-slate-500 dark:hover:text-slate-300">Login here</a>.
             </p>
         </div>
     </div>
