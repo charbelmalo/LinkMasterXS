@@ -81,6 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const filtersSection = document.getElementById('filtersSection');
     const mainContainer = document.getElementById('mainContainer');
   
+    // script.js
+document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+  });
+  
     toggleButton.addEventListener('click', function () {
   
       // Adjust grid columns
@@ -418,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const averageLuminance = calculateAverageLuminance(shortcut.color_from, shortcut.color_to);
                 const textColor = 'text-white';
                 const overlayStrength = averageLuminance > 0.5 ? 'luminanceneg' : 'luminancepos' ;
-                article.className = 'transition-all duration-200 opacity-1  link-card ';
+                // article.className = 'transition-all duration-200 opacity-100  link-card ';
 
                 // Create the link card container
                 const linkCard = document.createElement('a');
@@ -710,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Card footer
                 const footer = document.createElement('header');
-                footer.className = 'mt-1 flex items-center overflow-hidden';
+                footer.className = 'mt-0 flex items-center overflow-hidden';
 
                 // Extract domain from URL
                 const domain = extractDomain(shortcut.link);
@@ -792,6 +797,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Remove opacity-0 to start fade-in effect
                 article.classList.remove('opacity-0');
             });
+
+            if(favoritedFirstCheckbox.checked){
+            document.querySelectorAll('article').forEach(card => {
+                const isFavorited = card.querySelector('i.fa-solid.fa-heart');
+                if (isFavorited == null) {
+                card.classList.remove('opacity-100');
+                card.classList.add('opacity-10');
+                }
+            });
+
+        }
         }, 200); // Match this delay with the duration of fade-out
     }
 
@@ -904,6 +920,7 @@ function fetchTags() {
         console.error('Error fetching tags:', error);
     });
 }
+
 
 function renderTagTree(tags, container, level = 0) {
     tags.forEach((tag, index) => {
@@ -1076,32 +1093,31 @@ function handleTagSelection(tagId) {
         if (favoritedFirstCheckbox.checked) {
             
             favoritedIcon.classList.remove('fa-regular', 'text-slate-700');
-            favoritedIcon.classList.add('fa-solid', 'text-white');
-            favFilterContainer.classList.add('dark:from-red-600', 'dark:to-red-400');
-            favoritedText.classList.remove('dark:from-slate-900');
-            favoritedText.classList.remove('text-slate-700');
+            favoritedIcon.classList.add('fa-solid', 'dark:text-white','animate-ping');
+            favFilterContainer.classList.add('dark:bg-red-500','dark:hover:bg-red-800');
+            favFilterContainer.classList.remove('opacity-60');
             favoritedText.classList.add('text-white');
             
             fetchShortcuts();
-            // Update opacity for all shortcuts
-            document.querySelectorAll('.link-card').forEach(card => {
-                const isFavorited = card.querySelector('.fa-solid') !== null;
-                card.style.opacity = isFavorited ? '1' : '0.5';
-            });
+            // Update opacity for all shortcuts 
+            
+           
         } else {
             favoritedIcon.classList.remove('fa-solid', 'text-white');
             favoritedIcon.classList.add('fa-regular', 'text-red-700');
-            favFilterContainer.classList.remove('dark:from-red-600', 'dark:to-red-400');
+            favFilterContainer.classList.remove('dark:from-red-500', 'dark:to-red-700','dark:hover:to-red-800');
             favoritedText.classList.remove('text-white');
             favoritedText.classList.add('text-red-700');
+            favFilterContainer.classList.add('opacity-60');
             
             fetchShortcuts(favoritedFirstCheckbox.checked);
             // Reset opacity for all shortcuts
             document.querySelectorAll('article.link-card').forEach(card => {
-                card.style.opacity = '1';
+                card.classList.remove('opacity-50');
+                card.classList.add('opacity-100');
             });
         }
-        
+       
         // fetchShortcuts();
     });
     
