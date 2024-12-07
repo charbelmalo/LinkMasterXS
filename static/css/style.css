@@ -23469,9 +23469,7 @@ table.inference-table tr th:last-child {
   left: calc(50% - 20vw);
   right: auto;
   width: 40vw;
-  background-image: linear-gradient(to top, #1c2432, #161d29);
   border-radius: 10px;
-  padding: 40px;
 }
 .float-right {
   float: right;
@@ -23620,10 +23618,49 @@ filter: brightness(var(--tw-brightness));
 
 .sidebar .sidebar-text {
   opacity: 1;
-  transition: opacity 0.3s;
+  transition: all 0.3s;
 }
 
 .sidebar.collapsed .sidebar-text {
   opacity: 0;
   pointer-events: none;
+  max-width: 0px;
+  max-height: 0px;
+  overflow: hidden;
+}
+
+
+
+/* APPLE */
+.action-item {
+  position: relative;
+  background: transparent;
+  border-radius: 20px;
+}
+
+.action-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 20px;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.18) 0%, rgba(94, 94, 94, 0) 40%), rgba(255, 255, 255, 0.06);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  transition: all 1s ease-in-out;
+ 
+background-blend-mode: color-dodge, lighten;
+box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.10);
+}
+.action-item:hover::before {
+  background-size: 100% 300%;
+
+
 }

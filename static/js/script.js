@@ -79,11 +79,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const toggleButton = document.getElementById('toggleFiltersButton');
     const filtersSection = document.getElementById('filtersSection');
+    const hyperlogo = document.getElementById('hyperlogo');
+    
     const mainContainer = document.getElementById('mainContainer');
   
     // script.js
 document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('collapsed');
+    hyperlogo.classList.toggle('justify-center');
   });
   
     toggleButton.addEventListener('click', function () {

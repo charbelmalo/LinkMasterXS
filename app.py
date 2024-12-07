@@ -47,13 +47,28 @@ def load_user(user_id):
 #     return dict(csrf_token=generate_csrf())
 # app.py
 
+# app.py
 @app.route('/')
 @login_required
 def index():
     domains = get_domains().get_json()
     theme = session.get('theme', 'light')
-    return render_template('index.html', domains=domains, theme=theme)
+    username = current_user.username
 
+    # Calculate initials
+    initials = ''.join([name[0].upper() for name in username.split(' ')[:2]])
+    # Calculate hue value based on username
+    total = sum(ord(c) for c in username)
+    hue = total % 360
+
+    return render_template(
+        'index.html',
+        domains=domains,
+        theme=theme,
+        username=username,
+        initials=initials,
+        hue=hue
+    )
 
 @app.route('/set_theme', methods=['POST'])
 def set_theme():
