@@ -215,6 +215,72 @@ def get_favicon():
         cache.set(cache_key, (content, 'image/png')) 
         return send_file(BytesIO(content), mimetype='image/png')
     
+from PIL import Image
+from colorthief import ColorThief
+import tempfile
+
+@app.route('/api/autofill', methods=['GET'])
+@login_required
+def autofill():
+    link = request.args.get('url')
+    if not link or not (link.startswith('http://') or link.startswith('https://')):
+        return jsonify({"error": "Invalid URL"}), 400
+
+    try:
+        # Fetch page
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(link, headers=headers, timeout=3)
+        if r.status_code != 200:
+            return jsonify({"error": "Cannot access URL"}), 400
+
+        # Parse for metadata
+        soup = BeautifulSoup(r.text, 'html.parser')
+        # Try to get title
+        title = soup.title.string.strip() if soup.title else 'Untitled'
+        # Try meta description
+        meta_desc = soup.find('meta', attrs={'name': 'description'})
+        short_description = meta_desc['content'].strip() if meta_desc and meta_desc.has_attr('content') else ""
+
+        # Try favicon
+        domain = urllib.parse.urlparse(link).hostname
+        # Get favicon from our existing route
+        favicon_url = f"http://localhost:5000/favicons/get_favicon?domain={domain}&theme=light"
+        fav_r = requests.get(favicon_url, timeout=3)
+        if fav_r.status_code == 200:
+            # Extract dominant colors
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
+                tmp.write(fav_r.content)
+                tmp.flush()
+                color_thief = ColorThief(tmp.name)
+                # Get dominant palette
+                palette = color_thief.get_palette(color_count=2)
+                # Convert to hex
+                def rgb_to_hex(rgb):
+                    return '#%02x%02x%02x' % rgb
+                if len(palette) < 2:
+                    # Just duplicate the same color if we can't find two distinct
+                    palette.append(palette[0])
+                color_from_hex = rgb_to_hex(palette[0])
+                color_to_hex = rgb_to_hex(palette[1])
+        else:
+            # Default colors
+            color_from_hex = "#ffffff"
+            color_to_hex = "#ffffff"
+
+        data = {
+            "name": title,
+            "emoji": "📟",
+            "color_from": color_from_hex,
+            "color_to": color_to_hex,
+            "short_description": short_description
+        }
+        return jsonify(data), 200
+
+    except Exception as e:
+        logging.error(f"Autofill error: {e}")
+        return jsonify({"error": "Failed to autofill"}), 500
+
+
 with app.app_context():
     db.create_all()
     # Check if at least one user exists. If not, seed the database.

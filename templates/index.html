@@ -2,52 +2,34 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section id="mainContainer" class="flex flex-col min-h-full   overflow-y-auto  container border-slate-100 md:col-span-12 pl-0 relative break-words transition duration-300 ">
+<section id="mainContainer" class="flex flex-col min-h-full overflow-y-auto   border-slate-100 md:col-span-12 pl-0 relative break-words transition duration-300 ">
 
-  <div class="flex items-center content-center justify-between mt-4 mb-2">
-    <div class="flex items-center">
-      <span class="text-lg font-mono">Saved Links</span>
-      <span class="ml-3 px-2 font-semibold text-gray-500 bg-gray-400/5 dark:bg-gray-500/10 rounded text-center skeleton-loading"><span id="linkCountTotal"><i class="fa fa-duotone fa-spinner animate-spin "></i></span> <i class="ml-1 fa fa-xs fa-link"></i></span>
-    </div>
-    <div class="actions-toolbar flex space-x-2">
-      <button 
-  id="addLinkBtn" 
-  aria-label="Add New Link" 
-  class="inline-flex cursor-pointer select-none items-center 
-  h-10 text-base rounded-lg leading-none 
-  bg-gradient-to-br from-white/20 to-white/5 hover:from-green-600/50 
-  hover:to-green-600/20 text-white shadow-lg hover:shadow-green-500/5 
-  transition duration-300 px-4 text-sm font-semibold"
->
-  <i class="fa fa-solid fa-plus mr-2"></i> 
-  Add New Link
-</button>
-
-<!-- Favorited Filter -->
-<button id="favoritedFilterContainer" 
-  class=" inline-flex h-10 w-10 items-center justify-center rounded-lg transition duration-300 ease-out dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300"
-  aria-label="Toggle Favorites Filter">
-  <div class="w-5 h-5 flex items-center justify-center">
-    <i id="favoritedIcon" class="fa fa-regular fa-heart transition duration-300"></i>
-  </div>
-</button>
-
-<!-- Pinned Filter -->
-<button id="pinnedFilterContainer"
-  class=" inline-flex h-10 w-10 items-center justify-center rounded-lg transition duration-300 ease-out dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300"
-  aria-label="Toggle Pinned Filter">
-  <div class="w-5 h-5 flex items-center justify-center">
-    <i class="fa fa-regular fa-bookmark transition duration-300"></i>
-  </div>
-</button>
-
- <button id="toggleFiltersButton" aria-label="Toggle Advanced Filters" class="transition duration-300 inline-flex h-10 w-10 justify-center items-center rounded-lg dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300">
-        <i class="fa fa-solid fa-sliders-v py-3"></i>
+  <div class=" mt-4 mb-2">
+    <div class="border-b border-gray-800 w-full  pb-4 items-center">
+      <div class="flex items-center container justify-between">
+        <div class="">
+          <span class="text-lg font-mono font-semibold">Saved Links</span>
+        <span class="ml-3 px-2 font-semibold text-gray-500 bg-gray-400/5 dark:bg-gray-500/10 rounded text-center skeleton-loading"><span id="linkCountTotal"><i class="fa fa-duotone fa-spinner animate-spin "></i></span> <i class="ml-1 fa fa-xs fa-link"></i></span>
+        
+        </div>
+        <button 
+        id="addLinkBtn" 
+        aria-label="Add New Link" 
+        class="inline-flex cursor-pointer select-none items-center 
+        h-8 text-base rounded-lg leading-none 
+        bg-gradient-to-br from-white/20 to-white/5 hover:from-green-600/50 
+        hover:to-green-600/20 text-white shadow-lg hover:shadow-green-500/5 
+        transition duration-300 px-4 text-sm font-semibold"
+      >
+        <i class="fa fa-solid fa-plus mr-2"></i> 
+        Add New Link
       </button>
+      </div>
     </div>
+    
   </div>
 
-  <div class="flex justify-between">
+  <div class="flex justify-between container">
     <!-- Additional filter controls if needed -->
      
     <div id="activeFiltersToolbar" class="flex flex-wrap items-center gap-2 py-2 px-1">
@@ -58,21 +40,49 @@
            focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 transition pl-8 " id="searchInput" placeholder="Search Titles, Tags, Domains..." type="text" autocomplete="off">
            <i class="fa fa-regular fa-search fa-sm absolute left-3 text-gray-400 top-1/2 transform -translate-y-1/2 "> </i>
           </div>
+          
     </div>
-    <div class="flex relative">
-      <button id="sortButton" class="">
-        <div class="flex items-center gap-1 rounded-full w-[180px] justify-between px-2 py-1 text-sm capitalize bg-gray-800/25 hover:bg-gray-700/20 border border-gray-700 text-gray-200 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-          <span id="selectedSort" class="font-medium"><i class="fa-regular fa-arrow-down-z-a pr-1"></i> Date Added</span> 
-          <i class="fa fa-solid fa-caret-down ml-2 pr-1"></i>
-          <input id="sortSelect" type="text" class="hidden" value="date_added">
-        </div>
-      </button>
-      <div id="sortDropdown" class="absolute top-10 right-1 mt-1 w-48 bg-white dark:bg-slate-900 rounded-md shadow-lg hidden z-10">
-        <div class="py-1">
-          <a href="#" class="sort-option block px-4 py-2 cursor-pointer text-sm text-slate-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800" data-value="date_added">Recently Created</a>
-          <a href="#" class="sort-option block px-4 py-2 cursor-pointer text-sm text-slate-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800" data-value="date_updated">Recently Updated</a>
-          <a href="#" class="sort-option block px-4 py-2 cursor-pointer text-sm text-slate-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800" data-value="alphabetical">Alphabetical</a>
-          <a href="#" class="sort-option block px-4 py-2 cursor-pointer text-sm text-slate-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800" data-value="score">Score</a>
+    <div class="flex items-center space-x-2">
+      <div class="actions-toolbar flex space-x-2">
+      
+
+        <!-- Favorited Filter -->
+        <button id="favoritedFilterContainer" 
+          class=" inline-flex h-8 w-8 items-center justify-center rounded-lg transition duration-300 ease-out dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300"
+          aria-label="Toggle Favorites Filter">
+          <div class="w-5 h-5 flex items-center justify-center">
+            <i id="favoritedIcon" class="fa fa-regular fa-heart transition duration-300"></i>
+          </div>
+        </button>
+        
+        <!-- Pinned Filter -->
+        <button id="pinnedFilterContainer"
+          class=" inline-flex h-8 w-8 items-center justify-center rounded-lg transition duration-300 ease-out dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300"
+          aria-label="Toggle Pinned Filter">
+          <div class="w-5 h-5 flex items-center justify-center">
+            <i class="fa fa-regular fa-bookmark transition duration-300"></i>
+          </div>
+        </button>
+        
+         <button id="toggleFiltersButton" aria-label="Toggle Advanced Filters" class="transition duration-300 inline-flex h-8 w-8 justify-center items-center rounded-lg dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300">
+                <i class="fa fa-solid fa-sliders-v py-3"></i>
+              </button>
+            </div>
+      <div class="flex relative">
+        <button id="sortButton" class="">
+          <div class="flex items-center gap-1 rounded-full w-[200px] justify-between px-2 py-1 text-sm capitalize bg-gray-800/25 hover:bg-gray-700/20 border border-gray-700 text-gray-200 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+            <span id="selectedSort" class="font-medium"><i class="fa-regular fa-arrow-down-z-a pr-1"></i> Date Added</span> 
+            <i class="fa fa-solid fa-caret-down ml-2 pr-1"></i>
+            <input id="sortSelect" type="text" class="hidden" value="date_added">
+          </div>
+        </button>
+        <div id="sortDropdown" class="absolute top-10 right-1 mt-1 w-48 bg-white dark:bg-slate-900 rounded-md shadow-lg hidden z-10">
+          <div class="py-1">
+            <a href="#" class="sort-option block px-4 py-2 cursor-pointer text-sm text-slate-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800" data-value="date_added">Recently Created</a>
+            <a href="#" class="sort-option block px-4 py-2 cursor-pointer text-sm text-slate-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800" data-value="date_updated">Recently Updated</a>
+            <a href="#" class="sort-option block px-4 py-2 cursor-pointer text-sm text-slate-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800" data-value="alphabetical">Alphabetical</a>
+            <a href="#" class="sort-option block px-4 py-2 cursor-pointer text-sm text-slate-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800" data-value="score">Score</a>
+          </div>
         </div>
       </div>
     </div>
@@ -80,7 +90,7 @@
 
 
   <div id="linksGrid"
-    class="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 3xl:grid-cols-4 py-1 border-slate-100  dark:border-gray-200/10 ">
+    class=" container grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 3xl:grid-cols-4 py-1 border-slate-100  dark:border-gray-200/10 ">
     <!-- Shortcuts will be dynamically loaded here by script.js -->
      
   </div>
@@ -116,11 +126,11 @@
 
   <!-- Favorited and Pinned filters without active animation, only hover pulse -->
   <!-- <div class="flex items-center my-4 gap-2">
-    <button id="favoritedFilterContainer" class="inline-flex h-10 w-10 justify-center items-center rounded dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 mr-2 hover:animate-ping"
+    <button id="favoritedFilterContainer" class="inline-flex h-8 w-8 justify-center items-center rounded dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 mr-2 hover:animate-ping"
       title="Filter by Favorites">
       <i class="fa fa-solid fa-heart fa-lg py-3"></i>
     </button>
-    <button id="pinnedFilterContainer" class="inline-flex h-10 w-10 justify-center items-center rounded dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 mr-2 hover:animate-ping"
+    <button id="pinnedFilterContainer" class="inline-flex h-8 w-8 justify-center items-center rounded dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 mr-2 hover:animate-ping"
       title="Filter by Pinned">
       <i class="fa fa-solid fa-bookmark fa-lg py-3"></i>
     </button>
@@ -137,7 +147,7 @@
         <i class="fa fa-solid fa-search text-sm fa-xs text-white mr-2"></i>Search Links
       </div>
     </div>
-    <div class="h-10 relative">
+    <div class="h-8 relative">
       <input class="w-full  px-3 py-2 text-sm rounded-full border border-gray-300 dark:border-gray-700 
          bg-white dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 
          focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition pl-8 " id="aiSearchInput" placeholder="Search with AI..." type="text" autocomplete="off">
