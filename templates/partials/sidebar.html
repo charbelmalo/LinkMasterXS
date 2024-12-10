@@ -1,0 +1,58 @@
+<!-- templates/partials/sidebar.html -->
+<div id="sidebar" class="min-h-screen max-h-screen sidebar fixed inset-y-0 left-0 z-30 collapsed w-20 pt-3 overflow-y-auto transition-transform duration-300 -translate-x-full md:translate-x-0 md:relative bg-gradient-to-b from-[#0B0C1E] to-[#10122D] border-r border-[#1F2233] dark:to-gray-900 dark:from-gray-800/80 transition duration-200 sidebar ease-in-out ">
+    <div class="flex flex-col h-full justify-between items-start">
+      <!-- Logo area -->
+      <a href="#" class="flex items-center justify-center mx-3 p-2" id="hyperlogo">
+        <img class=" w-full max-w-[50px] m-auto inline-block transition duration-[1s] ease-out rounded-lg duration-200 hover:shadow-[0_0_51px_#7c3aed70]" src="{{ url_for('static', filename='default/linkchain.png') }}" alt="Xvault Logo">
+        <span class="ml-2 sidebar-text inline-block">
+          <h3 class="text-md font-semibold text-gray-200 dark:text-slate-200">HyperLink XS</h3>
+          <h6 class="tracking-widest text-slate-400 uppercase text-[10px]">The Ultimate URL Manager</h6>
+        </span>
+      </a>
+      <!-- Navigation -->
+      <nav class="flex flex-col flex-grow items-start justify-start p-4 space-y-4 w-full">
+        <a id="toggleSidebarBtn" 
+   class="relative w-full h-10 flex items-center justify-start px-4 rounded-md transition duration-200 ease-out hover:bg-gray-700 hover:shadow-[0_0_8px_#1C1F3A] group">
+  <i class="fa fa-lg fa-solid fa-caret-right w-[24px] text-center text-gray-300"></i>
+  <span class="sidebar-text left-full ml-3 w-auto whitespace-nowrap bg-gray-950/80 text-gray-100 text-xs font-semibold px-2 py-1 rounded group-hover:block transition duration-200 ease-out">
+    Collapse sidebar
+  </span>
+</a>
+        <!-- Home Link -->
+        <a href="{{ url_for('main.index') }}" class="relative w-full h-10 flex items-center justify-start px-4 rounded-md transition-colors hover:bg-gray-700 group">
+          <i class="fa fa-regular fa-home-alt w-[24px] text-center text-gray-200"></i>
+          <span class="sidebar-text ml-3 w-auto whitespace-nowrap text-gray-100 text-xs font-semibold px-2 py-1 rounded">
+            Home
+          </span>
+        </a>
+  
+        <!-- Profile Link -->
+        <a href="#" class="relative h-10 w-full flex items-center justify-start px-4 rounded-md transition-colors hover:bg-gray-700 group">
+          <i class="fa fa-user w-[24px] text-center text-gray-200"></i>
+          <span class="sidebar-text ml-3 text-gray-100 text-xs font-semibold px-2 py-1 rounded">
+            Profile
+          </span>
+        </a>
+      </nav>
+  
+      <div class="px-4 py-4 w-full flex flex-col items-start space-y-4">
+        <div class="border-t border-[#1F2233] w-full"></div>
+        <div class="flex flex-col items-center group w-full">
+          <span class="relative w-full h-10 flex items-center justify-center rounded-md transition-colors group">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+            style="background-color: darkorange">
+            {{ initials }}
+            </div>
+            <div class="sidebar-text flex justify-between flex-grow">
+              <span class="sidebar-text text-sm font-semibold text-gray-200 ml-2">
+                Welcome, {{ username }}!
+              </span>
+              <a href="{{ url_for('auth.logout') }}" class="sidebar-text bg-black/80 text-gray-100 text-xs font-semibold rounded px-2 py-1">
+              Logout
+              </a>
+            </div>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>

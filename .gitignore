@@ -1,8 +1,10 @@
 ignore/*
 .DS_Store
-instance/*
 __pycache__/*
 __pycache__/app.cpython-310.pyc
-instance/shortcuts.db
 .env
 bashscrapeimg.sh
+merged
+merged.txt
+exportproject.py
+export_shortcuts_to_json.py

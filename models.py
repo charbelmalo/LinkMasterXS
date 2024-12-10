@@ -24,7 +24,6 @@ class Shortcut(db.Model):
 
     id = db.Column(db.String(36), primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
     name = db.Column(db.String(150), nullable=False)
     link = db.Column(db.String(500), nullable=False)
     emojis = db.Column(db.String(50))
@@ -36,9 +35,10 @@ class Shortcut(db.Model):
     score = db.Column(db.Float, default=0.0)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     date_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    click_count = db.Column(db.Integer, default=0)  # New field
 
-    # Relationships
     tags = db.relationship('Tag', secondary='shortcut_tag', backref=db.backref('shortcuts', lazy='dynamic'))
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -54,7 +54,8 @@ class Shortcut(db.Model):
             'score': self.score,
             'date_added': self.date_added,
             'date_updated': self.date_updated,
-            'user_id': self.user_id
+            'user_id': self.user_id,
+            'click_count': self.click_count
         }
 
 class Tag(db.Model):

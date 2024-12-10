@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>HyperLink XS - CharbelAI Toolkits</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="HyperLink XS - Manage and organize your favorite links efficiently.">
+    <meta name="keywords" content="HyperLinkXS, link management, bookmarks, shortcuts, organization">
+
+    <link rel="icon" href="{{ url_for('static', filename='default/favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='/css/utils.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fontawesome/css/all.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="flex flex-col bg-white dark:bg-black bg-gradient-to-b from-gray-900/80 to-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+  <!-- Outer flex container -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar with smooth transition -->
+    {% include 'partials/sidebar.html' %}
+
+    <!-- Main content area -->
+    <div class="flex-1 ml-0 pl-5 flex flex-col transition duration-300  max-h-screen">
+
+      {% include 'partials/header.html' %}
+
+      <div 
+        id="" 
+        class="min-h-full flex flex-col flex-grow md:grid md:space-y-0 w-full md:grid-cols-12 md:flex-1 md:grid-rows-full space-y-4 transition duration-300 ease-in-out"
+      >
+        {% block content %}{% endblock %}
+      </div>
+
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

@@ -23479,6 +23479,7 @@ input.color {
   
 }
 #modal-container {
+  backdrop-filter: blur(4px) brightness(0.5);
   position: fixed;
   height: 100vh;
   width: 100vw;

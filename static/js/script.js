@@ -1,5 +1,21 @@
 let isCmdPressed = false;
 
+// ai_config.json (Placeholder for future integration)
+const aiConfigSchema = {
+    "type": "object",
+    "properties": {
+      "openai_secret_key": { "type": "string" },
+      "enabled": { "type": "boolean" }
+    },
+    "required": ["openai_secret_key", "enabled"]
+  };
+  
+  // Example usage in script.js
+  let aiSearchConfig = {
+    "openai_secret_key": "",
+    "enabled": false
+  };
+
 // Global key event listeners
 document.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey) {
@@ -19,7 +35,6 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-
 document.addEventListener('DOMContentLoaded', () => {
     // Element references
     const searchInput = document.getElementById('searchInput');
@@ -29,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const favFilterContainer = document.getElementById('favoritedFilterContainer');
     const favoritedIcon = document.getElementById('favoritedIcon');
     const favoritedText = document.getElementById('favoritedText');
-    const tagsToolbar = document.getElementById('tagsTree');
+    const tagsfiltersactive_bar = document.getElementById('tagsTree');
     const linksGrid = document.getElementById('linksGrid');
     const addLinkBtn = document.getElementById('addLinkBtn');
     const linkModal = document.getElementById('linkModal');
@@ -37,8 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModalBtn = document.getElementById('closeModal');
     const linkForm = document.getElementById('linkForm');
     let selectedTags = []; // Keep track of selected tags
-
- 
+    let tagSelected = false;
+    const filtersactive_bar =   document.getElementById('activeFiltersToolbar');
+    const pinnedFilterContainer = document.getElementById('pinnedFilterContainer');
+    let favoritedOnly = false;
+    let pinnedOnly = false;
 
     function debounce(func, delay) {
         let debounceTimer;
@@ -48,9 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => func.apply(context, args), delay);
         };
-      }
+    }
 
-      
     // Form fields
     const linkIdField = document.getElementById('linkId');
     const linkNameField = document.getElementById('linkName');
@@ -65,9 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const favoritedField = document.getElementById('favorited');
     const saveLinkBtn = document.getElementById('saveLinkBtn');
 
-
     containerModal = document.getElementById('modal-container');
-
 
     // Sort dropdown functionality
     const sortButton = document.getElementById('sortButton');
@@ -80,51 +95,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleButton = document.getElementById('toggleFiltersButton');
     const filtersSection = document.getElementById('filtersSection');
     const hyperlogo = document.getElementById('hyperlogo');
-    
     const mainContainer = document.getElementById('mainContainer');
-  
-    // script.js
-document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('collapsed');
-    hyperlogo.classList.toggle('justify-center');
-  });
-  
-    toggleButton.addEventListener('click', function () {
-  
-      // Adjust grid columns
-      if (filtersSection.classList.contains('hidden')) {
-        mainContainer.classList.remove('md:col-span-12');
-        mainContainer.classList.add('md:col-span-8');
-        // toggleButton.textContent = 'Show Advanced Filters';
-      } else {
-        mainContainer.classList.remove('md:col-span-8');
-        mainContainer.classList.add('md:col-span-12');
-        // toggleButton.textContent = 'Hide Advanced Filters';
-      }
 
-      filtersSection.classList.toggle('hidden');
+    document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+        hyperlogo.classList.toggle('justify-center');
+
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar.classList.contains('w-64')) {
+            sidebar.classList.remove('w-64');
+            sidebar.classList.add('w-20');
+        } else {
+            sidebar.classList.remove('w-20');
+            sidebar.classList.add('w-64');
+        }
     });
-    // Function to determine theme preference
+
+    toggleButton.addEventListener('click', function () {
+        // Adjust grid columns
+        if (filtersSection.classList.contains('max-h-0')) {
+            mainContainer.classList.remove('md:col-span-12');
+            mainContainer.classList.remove('lg:col-span-12');
+            mainContainer.classList.remove('xl:col-span-12');
+            mainContainer.classList.add('md:col-span-8');
+            mainContainer.classList.add('lg:col-span-8');
+            mainContainer.classList.add('xl:col-span-8');
+            filtersSection.classList.remove('max-h-0');
+            filtersSection.classList.add('max-h-[100vh]');
+            filtersSection.classList.remove('collapse');
+        } else {
+            
+            mainContainer.classList.remove('md:col-span-8');
+            mainContainer.classList.remove('lg:col-span-8');
+            mainContainer.classList.remove('xl:col-span-8');
+            mainContainer.classList.add('md:col-span-12');
+            mainContainer.classList.add('lg:col-span-12');
+            mainContainer.classList.add('xl:col-span-12');
+            filtersSection.classList.remove('max-h-[100vh]');
+            filtersSection.classList.add('max-h-0');
+            filtersSection.classList.add('collapse');
+        }
+    });
+
+    // Theme logic
     function getThemePreference() {
-        // Check if the user has set a specific preference in the browser
         const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)").matches;
         const prefersLightScheme = window.matchMedia("(prefers-color-scheme: light)").matches;
 
-        // Here, you can define how to detect "automatic" if applicable.
-        // For simplicity, we'll assume if neither dark nor light is explicitly set, it's automatic.
         let theme = 'automatic';
-
         if (prefersDarkScheme) {
             theme = 'dark';
         } else if (prefersLightScheme) {
             theme = 'light';
         }
 
-        // If theme is automatic, determine OS-level preference (this is similar to what browsers do)
         if (theme === 'automatic') {
-            // You might have additional logic here. For this example, we'll default to light.
-            // Alternatively, you can perform more complex checks or ask the user.
-            // Here, we'll re-check the OS preference
             if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
                 theme = 'dark';
             } else {
@@ -135,7 +160,6 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
         return theme;
     }
 
-    // Send the theme to the server
     function sendThemeToServer(theme) {
         fetch('/set_theme', {
             method: 'POST',
@@ -147,7 +171,6 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
         .then(response => response.json())
         .then(data => {
             console.log('Theme preference saved:', data.theme);
-            // Optionally, you can apply the theme immediately
             applyTheme(data.theme);
         })
         .catch((error) => {
@@ -155,16 +178,59 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
         });
     }
 
-    // Function to apply the theme to the page
     function applyTheme(theme) {
         document.body.setAttribute('data-theme', theme);
-        // You can define CSS variables or classes based on the theme
     }
 
     const theme = getThemePreference();
     sendThemeToServer(theme);
-      // Event listener for linkTagsInput (Autocomplete)
-      linkTagsInput.addEventListener('input', () => {
+
+    // script.js
+const activateAISearchBtn = document.getElementById('activateAISearchBtn');
+const aiKeyModal = document.getElementById('aiKeyModal');
+const aiSecretKeyInput = document.getElementById('aiSecretKeyInput');
+const saveAISKeyBtn = document.getElementById('saveAISKeyBtn');
+const closeAIKeyModal = document.getElementById('closeAIKeyModal');
+
+
+activateAISearchBtn.addEventListener('click', () => {
+  if (!aiSearchConfig.openai_secret_key) {
+    // Prompt user for key
+    aiKeyModal.classList.remove('hidden');
+    aiSecretKeyInput.focus();
+  } else {
+    // Already enabled, transform search bar
+    aiSearchConfig.enabled = !aiSearchConfig.enabled;
+    applyAISearchStyling(aiSearchConfig.enabled);
+  }
+});
+
+saveAISKeyBtn.addEventListener('click', () => {
+  const key = aiSecretKeyInput.value.trim();
+  if (key) {
+    aiSearchConfig.openai_secret_key = key;
+    aiSearchConfig.enabled = true;
+    aiKeyModal.classList.add('hidden');
+    applyAISearchStyling(true);
+  }
+});
+
+closeAIKeyModal.addEventListener('click', () => {
+  aiKeyModal.classList.add('hidden');
+});
+
+function applyAISearchStyling(enabled) {
+  if (enabled) {
+    // Change search bar to indigo-based styling
+    searchInput.classList.add('border-indigo-500', 'bg-indigo-50', 'text-indigo-900', 'focus:ring-indigo-500');
+  } else {
+    searchInput.classList.remove('border-indigo-500', 'bg-indigo-50', 'text-indigo-900', 'focus:ring-indigo-500');
+  }
+}
+
+
+    // Autocomplete for tags in modal
+    linkTagsInput.addEventListener('input', () => {
         const query = linkTagsInput.value.trim().split(/[,>]/).pop().trim();
         if (query.length === 0) {
             tagsDropdown.classList.add('hidden');
@@ -178,9 +244,6 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
             });
     });
 
-
-
-
     sortButton.addEventListener('click', (e) => {
         e.stopPropagation();
         sortDropdown.classList.toggle('hidden');
@@ -190,7 +253,7 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
         option.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            selectedSort.textContent = e.target.textContent;
+            selectedSort.innerHTML = `<i class="fa-regular fa-arrow-down-z-a pr-1.5"></i>`+e.target.textContent;
             sortsSelect.value = e.target.dataset.value;
             sortDropdown.classList.add('hidden');
             fetchShortcuts(); // Refresh the shortcuts based on new sort
@@ -203,211 +266,143 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
         }
     });
 
-    // Variables to keep track of active tags
     let activeTags = [];
 
     function fetchShortcuts(params = {}) {
         const searchParams = new URLSearchParams();
-    
+
         // Add domain parameter if provided
         if (params.domain) {
             searchParams.append('domain', params.domain);
         }
-    
+
         // Search input
         if (searchInput.value) {
             searchParams.append('search', searchInput.value);
         }
-    
+
         // Sort selection
         if (sortSelect.value) {
             searchParams.append('sort_by', sortSelect.value);
         }
-    
-        // Favorited filter
-        if (favoritedFirstCheckbox.checked) {
-            searchParams.append('favorited_first', 'true');
+
+        // Favorited/pinned filters
+        if (favoritedOnly) {
+            searchParams.append('favorited_only', 'true');
         }
-    
+        if (pinnedOnly) {
+            searchParams.append('pinned_only', 'true');
+        }
+
+        if(currentDomains.length > 0){
+            currentDomains.forEach(d => {
+                searchParams.append('domain', d);
+              });
+        }
         // Selected tags
         if (selectedTags.length > 0) {
             selectedTags.forEach(tagId => {
                 searchParams.append('tags', tagId);
             });
         }
-    
-        fetch(`/api/shortcuts?${searchParams.toString()}`)
-            .then(response => response.json())
-            .then(shortcuts => {
-                linksGrid.innerHTML = ''; // Clear previous results
-                displayShortcuts(shortcuts);
-            })
-            .catch(error => {
-                console.error('Error fetching shortcuts:', error);
-            });
+
+        return fetch(`/api/shortcuts?${searchParams.toString()}`)
+        .then(response => response.json())
+        .then(shortcuts => {
+          displayShortcuts(shortcuts);
+          applyPinnedAndFavoriteStyling();
+          updateFilterStyles();
+          updateLinkCounts(shortcuts.length);
+          // If you have a separate endpoint or data for total clicks:
+          fetchTotalClicks().then(clicks => {
+            document.getElementById('linkCountTotal').textContent = clicks;
+            document.getElementById('linkCountTotal').parentElement.classList.remove(
+                'skeleton-loading',
+            );
+          });
+          return shortcuts;
+        })
+        .catch(error => {
+          console.error('Error fetching shortcuts:', error);
+        });
     }
+
+    // After shortcuts are displayed:
+function applyPinnedAndFavoriteStyling() {
+    // If favoritedOnly or pinnedOnly is active, fade out non-matching cards.
+    document.querySelectorAll('#linksGrid article').forEach(article => {
+      const shortcutId = article.getAttribute('data-id');
+    //   const shortcut = shortcuts.find(s => s.id === shortcutId);
+      if (favoritedOnly && article.querySelector('.fa-solid.fa-heart') == null) {
+        article.style.opacity = '0.1';
+      } else if (pinnedOnly && article.querySelector('.fa-solid.fa-bookmark') === null) {
+        article.style.opacity = '0.1';
+      } else {
+        article.style.opacity = '1';
+      }
+    });
+  }
+  
+    function updateLinkCounts(count) {
+     
+      
+        const linkCountElementReal = document.getElementById('linkCountTotal');
+        if (linkCountElementReal) {
+          linkCountElementReal.innerHTML = `${count}`;
+        }
+      }
+      
+      function fetchTotalClicks() {
+        // If you have an endpoint `/api/stats` returning { total_clicks: number }:
+        return fetch('/api/stats')
+          .then(res => res.json())
+          .then(data => data.total_clicks)
+          .catch(() => 0);
+      }
+
+  
     document.querySelectorAll('.domain-filter').forEach(filter => {
         filter.addEventListener('click', (e) => {
             e.preventDefault();
             const domain = filter.getAttribute('data-domain');
-            fetchShortcuts({ domain: domain });
+            if(!currentDomains.includes(domain))
+                {setDomainFilter(domain);}
+            else {removeDomainFilter(domain);}
+            // fetchShortcuts();
         });
     });
-    // Modify fetchTags to accept searchParams
-    // function fetchTags(searchParams) {
-    //     fetch(`/api/tags?${searchParams.toString()}`)
-    //         .then(response => response.json())
-    //         .then(tags => {
-    //             srenderTags(tags);
-    //         });
-    // }
 
-
-
-    // Modify renderTags to implement hierarchical navigation
-    // function srenderTags(tagsData) {
-    //     tagsToolbar.innerHTML = '';
-
-    //     function renderTagLevel(tags, level) {
-    //         tags.forEach(tag => {
-    //             const tagContainer = document.createElement('div');
-    //             tagContainer.classList.add('flex', 'flex-shrink-0');
-
-    //             const tagLabel = document.createElement('label');
-    //             tagLabel.classList.add('tag-label', 'cursor-pointer');
-
-    //             const tagSpan = document.createElement('span');
-    //             tagSpan.className = 'text-xs font-mono';
-    //             tagSpan.textContent = `${tag.name} (${tag.count})`;
-
-    //             tagLabel.appendChild(tagSpan);
-    //             tagContainer.appendChild(tagLabel);
-
-    //             // Click event for the tag
-    //             tagLabel.addEventListener('click', () => {
-    //                 if (activeTags[level] && activeTags[level].id === tag.id) {
-    //                     // Deselect current tag and remove deeper levels
-    //                     activeTags = activeTags.slice(0, level);
-    //                 } else {
-    //                     // Select new tag and update activeTags
-    //                     activeTags = activeTags.slice(0, level);
-    //                     activeTags[level] = tag;
-    //                 }
-    //                 fetchShortcuts();
-    //                 srenderTags(tagsData); // Re-render tags
-    //             });
-
-    //             tagsToolbar.appendChild(tagContainer);
-
-    //             // If this tag is active, render children
-    //             if (activeTags[level] && activeTags[level].id === tag.id) {
-    //                 // Add chevron
-    //                 const chevron = document.createElement('span');
-    //                 chevron.textContent = ' > ';
-    //                 chevron.className = 'chevron';
-    //                 tagsToolbar.appendChild(chevron);
-
-    //                 // Render child tags
-    //                 if (tag.children && tag.children.length > 0) {
-    //                     renderTagLevel(tag.children, level + 1);
-    //                 }
-    //             }
-    //         });
-    //     }
-
-    //     // Start rendering from root level tags
-    //     if (activeTags.length === 0) {
-    //         renderTagLevel(tagsData, 0);
-    //     } else {
-    //         // Find the active path of tags
-    //         let currentTags = tagsData;
-    //         for (let i = 0; i < activeTags.length; i++) {
-    //             const activeTag = activeTags[i];
-    //             renderTagLevel([activeTag], i);
-    //             if (activeTag.children && activeTag.children.length > 0) {
-    //                 currentTags = activeTag.children;
-    //             } else {
-    //                 currentTags = [];
-    //             }
-    //         }
-    //         if (currentTags.length > 0) {
-    //             renderTagLevel(currentTags, activeTags.length);
-    //         }
-    //     }
-    // }
-
-    // function renderTagTree(tags, parentElement) {
-    //     const ul = document.createElement('ul');
-    //     ul.classList.add('tag-tree');
-    //     tags.forEach(tag => {
-    //         const li = document.createElement('li');
-    //         li.classList.add('tag-item');
-    
-    //         const tagLabel = document.createElement('span');
-    //         tagLabel.textContent = `${tag.name} (${tag.count})`;
-    //         tagLabel.classList.add('tag-label');
-    //         tagLabel.addEventListener('click', () => {
-    //             // Handle tag selection
-    //             handleTagClick(tag.id);
-    //         });
-    
-    //         li.appendChild(tagLabel);
-    
-    //         if (tag.children && tag.children.length > 0) {
-    //             const toggleButton = document.createElement('button');
-    //             toggleButton.textContent = '+';
-    //             toggleButton.classList.add('toggle-button');
-    //             toggleButton.addEventListener('click', () => {
-    //                 li.classList.toggle('expanded');
-    //             });
-    //             li.insertBefore(toggleButton, tagLabel);
-    
-    //             renderTagTree(tag.children, li);
-    //         }
-    
-    //         ul.appendChild(li);
-    //     });
-    //     parentElement.appendChild(ul);
-    // }
-    
-    
-    // Usage in srenderTags
     function srenderTags(tagsData) {
-        tagsToolbar.innerHTML = '';
+        tagsfiltersactive_bar.innerHTML = '';
         const tagList = document.createElement('ul');
         tagList.classList.add('tag-tree');
         tagList.classList.add('max-h-unset', 'overflow-hidden');
         renderTagTree(tagsData, tagList);
-        tagsToolbar.appendChild(tagList);
+        tagsfiltersactive_bar.appendChild(tagList);
     }
-    
-    // Event listeners
+
+    // Debounce search input
     searchInput.addEventListener('input', debounce(() => {
         fetchShortcuts();
-      }, 300));
+    }, 300));
 
     sortSelect.addEventListener('change', () => {
         fetchShortcuts();
     });
 
-    favoritedFirstCheckbox.addEventListener('change', () => {
-        fetchShortcuts();
-    });
+    // if (favoritedFirstCheckbox) {
+    //     favoritedFirstCheckbox.addEventListener('change', () => {
+    //         fetchShortcuts();
+    //     });
+    // }
 
-    function handleTagSelection(tagId) {
-        const index = selectedTags.indexOf(tagId);
-        if (index > -1) {
-            selectedTags.splice(index, 1);
-        } else {
-            selectedTags.push(tagId);
-        }
-    }
+
+
     closeModalBtn.addEventListener('click', () => {
-
         linkForm.reset();
         closeModal();
     });
-    // Display shortcuts in the grid
+
     function displayShortcuts(shortcuts) {
         // Clear the grid with a fade-out effect
         linksGrid.querySelectorAll('article').forEach(article => {
@@ -416,189 +411,183 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
                 article.remove();
             }, 200);
         });
+        linksGrid.innerHTML = '';
+  
+        if (shortcuts.length === 0) {
+          const isFilterActive = !!(searchInput.value || pinnedOnly || favoritedOnly || selectedTags.length > 0 || !allDomainsActive);
+          const message = document.createElement('div');
+          message.className = 'text-center text-gray-500 dark:text-gray-400 w-full mt-10';
+          if (isFilterActive) {
+            message.textContent = "No shortcuts found. Try removing some filters.";
+          } else {
+            message.textContent = "You have no shortcuts yet. Add some using the 'Add New Link' button!";
+          }
+          linksGrid.appendChild(message);
+          return;
+        }
 
-        // Delay adding new items to allow the fade-out to complete
         setTimeout(() => {
             shortcuts.forEach(shortcut => {
-                // Create the <article> element
+                // Rest of the card rendering code unchanged from your original
+                // except the favicon route corrected below
+
                 const article = document.createElement('article');
-                article.className = 'transition-all duration-200 opacity-0 link-card';
+                article.className = 'transition duration-200 opacity-0 link-card';
+                article.setAttribute('data-id', shortcut.id);
+
                 const averageLuminance = calculateAverageLuminance(shortcut.color_from, shortcut.color_to);
                 const textColor = 'text-white';
-                const overlayStrength = averageLuminance > 0.5 ? 'luminanceneg' : 'luminancepos' ;
-                // article.className = 'transition-all duration-200 opacity-100  link-card ';
+                const overlayStrength = averageLuminance > 0.5 ? 'luminanceneg' : 'luminancepos';
 
-                // Create the link card container
                 const linkCard = document.createElement('a');
                 linkCard.href = shortcut.link;
                 linkCard.target = '_blank';
                 linkCard.setAttribute('aria-label', 'Visit ' + shortcut.name);
-                linkCard.className = `link-card ${overlayStrength} relative h-48 z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden transition-all duration-200 h-40 rounded-lg`;
+                linkCard.className = `link-card ${overlayStrength} relative h-48 z-0 mx-auto flex flex-col items-center justify-center bg-gradient-to-br p-4 filter overflow-hidden transition duration-200 h-40 rounded-lg`;
                 linkCard.style.backgroundImage = `linear-gradient(to bottom right, ${shortcut.color_from}, ${shortcut.color_to})`;
 
-                // Add gradient overlay
                 const gradientOverlay = document.createElement('div');
-                gradientOverlay.className = averageLuminance < 0.9 ?  'absolute left-0 top-0 h-full w-full dark:highlight-white  bg-gradient-to-br from-white/10 to-black/10' : 'absolute left-0 top-0 h-full w-full  bg-gradient-to-b from-black/30 to-black/50';
+                if (averageLuminance < 0.1) {
+                    gradientOverlay.className = 'absolute left-0 top-0 h-full w-full dark:highlight-white bg-gradient-to-br from-white/20 to-white/10';
+                } else if (averageLuminance < 0.3) {
+                    gradientOverlay.className = 'absolute left-0 top-0 h-full w-full dark:highlight-white bg-gradient-to-br from-white/10 to-black/10';
+                } else if (averageLuminance < 0.6) {
+                    gradientOverlay.className = 'absolute left-0 top-0 h-full w-full dark:highlight-white bg-gradient-to-br from-transparent to-black/10';
+                } else if (averageLuminance < 0.9) {
+                    gradientOverlay.className = 'absolute left-0 top-0 h-full w-full dark:highlight-white bg-gradient-to-br from-black/5 to-black/20';
+                } else {
+                    gradientOverlay.className = 'absolute left-0 top-0 h-full w-full bg-gradient-to-b from-black/50 to-black/40';
+                }
+
                 linkCard.appendChild(gradientOverlay);
 
-               
-                // Status badge (e.g., "Shortcut")
                 const statusBadgeContainer = document.createElement('div');
-                statusBadgeContainer.className = 'absolute hidden opacity-0 flex flex-wrap content-start gap-1 overflow-hidden top-3 text-xs  transition-opacity duration-200';
+                statusBadgeContainer.className = 'absolute hidden opacity-0 flex flex-wrap content-start gap-1 overflow-hidden top-3 text-xs transition-opacity duration-200';
                 const statusBadge = document.createElement('div');
                 statusBadge.className = `inline-flex cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/30 leading-tight p-1 text-white opacity-100`;
-                const statusBadgeContent = document.createElement('div');
-               
-                // Get tags array and convert to hierarchy string
+
                 const tags = shortcut.tags || [];
                 const tagStrings = tags.map(tag => {
                     const parts = tag.split('>').map(t => t.trim());
-                    let result = '';
-                    parts.forEach((part, index) => {
-                        if (index > 0) {
-                            result += ' > ';
-                        }
-                        result += part;
-                    });
+                    let result = parts.join(' > ');
                     return result;
                 });
 
-                if(tags.length !== 0){
-                // Create span for each tag
-                tagStrings.forEach(tag => {
-                    const tagSpan = document.createElement('span');
-                    tagSpan.className = 'inline-flex items-center px-1 py-0';
-                    tagSpan.textContent = tag;
-                    statusBadge.appendChild(tagSpan);
+                if (tags.length !== 0) {
+                    tagStrings.forEach((tag, idx) => {
+                        const tagSpan = document.createElement('span');
+                        tagSpan.className = 'inline-flex items-center px-1 py-0';
+                        tagSpan.textContent = tag;
+                        statusBadge.appendChild(tagSpan);
 
-                    // Add separator between tags
-                    if (tagStrings.indexOf(tag) < tagStrings.length - 1) {
-                        const separator = document.createElement('span');
-                        separator.className = 'px-0.5';
-                        separator.textContent = '•';
-                        statusBadge.appendChild(separator);
-                    }
-                });
-                statusBadgeContainer.appendChild(statusBadge);
-                linkCard.appendChild(statusBadgeContainer);
+                        if (idx < tagStrings.length - 1) {
+                            const separator = document.createElement('span');
+                            separator.className = 'px-0.5';
+                            separator.textContent = '•';
+                            statusBadge.appendChild(separator);
+                        }
+                    });
+                    statusBadgeContainer.appendChild(statusBadge);
+                    linkCard.appendChild(statusBadgeContainer);
                 }
-                const iconContainer = document.createElement('div');
-                iconContainer.className = 'absolute hidden opacity-0 flex px-1 items-center rounded-xl top-2.5 right-4 text-xs  cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20  text-white  transition-opacity duration-200';
-                    // Icon and count container (e.g., score)
-                if (shortcut.score !== undefined && shortcut.score !== null && shortcut.score !== 0) {
-                    const icon = document.createElement('i');
-                    icon.className = 'fa fa-xs fa-star text-white mr-1';
-                    iconContainer.appendChild(icon);
 
-                    const countSpan = document.createElement('span');
-                    countSpan.className = 'text-white font-bold text-xs ';
-                    countSpan.textContent = shortcut.score;
-                    iconContainer.appendChild(countSpan);
+                const iconContainer = document.createElement('div');
+                iconContainer.className = 'absolute hidden opacity-0 flex px-1 items-center rounded-xl top-2.5 right-4 text-xs cursor-pointer select-none items-center overflow-hidden font-mono rounded bg-white/20 text-white transition-opacity duration-200';
+
+                if (shortcut.score) {
+                    const starIcon = document.createElement('i');
+                    starIcon.className = 'fa fa-xs fa-star text-white mr-1';
+                    iconContainer.appendChild(starIcon);
+
+                    const scoreSpan = document.createElement('span');
+                    scoreSpan.className = 'text-white font-bold text-xs';
+                    scoreSpan.textContent = shortcut.score;
+                    iconContainer.appendChild(scoreSpan);
                     linkCard.appendChild(iconContainer);
                 }
 
-                // Emoji overlay container
                 const emojiContainer = document.createElement('div');
-                emojiContainer.className = 'absolute text-center flex items-center justify-center -mt-1 opacity-50  transition-opacity duration-200';
+                emojiContainer.className = 'absolute text-center flex items-center justify-center -mt-1 opacity-50 transition-opacity duration-200';
                 emojiContainer.style.height = '60px';
                 emojiContainer.style.width = '-webkit-fill-available';
-
-                // Blurred emoji background
-                const blurContainer = document.createElement('div');
-                blurContainer.style.position = 'absolute';
-                blurContainer.style.height = '0';
-                blurContainer.style.width = '0px';
 
                 const blurredEmoji = document.createElement('div');
                 blurredEmoji.className = 'emoji inline absolute opacity-100 blur-100 text-6xl mb-1 transition-transform duration-200';
                 blurredEmoji.style.mixBlendMode = 'normal';
                 blurredEmoji.style.filter = 'blur(35px)';
                 blurredEmoji.textContent = shortcut.emojis || '🔗';
-                blurContainer.appendChild(blurredEmoji);
 
-                // Main emoji
                 const emojiSpan = document.createElement('div');
-                emojiSpan.className = 'emoji  inline absolute text-7xl mb-1 transition-transform duration-200';
-          
+                emojiSpan.className = 'emoji inline absolute text-7xl mb-1 transition-transform duration-200';
                 emojiSpan.textContent = shortcut.emojis || '🔗';
 
-                // Assemble the structure
                 emojiContainer.appendChild(blurredEmoji);
                 emojiContainer.appendChild(emojiSpan);
                 linkCard.appendChild(emojiContainer);
 
-                // Card Title (name)
                 const nameDiv = document.createElement('h4');
-                nameDiv.className = `card-title z-40 overflow-visible p-5 py-8 max-w-full truncate text-center font-bold  ${textColor} text-2xl transition-transform duration-200`;
+                nameDiv.className = `card-title z-40 overflow-visible p-5 py-8 max-w-full truncate text-center font-bold ${textColor} text-2xl transition-transform duration-200`;
                 nameDiv.style.textShadow = '0px 3px 40px rgba(0, 0, 0, 0.8)';
                 nameDiv.textContent = shortcut.name;
                 linkCard.appendChild(nameDiv);
-                const descriptionDiv = document.createElement('div');
 
-                const descriptionText = document.createElement('p');
-                const descriptionSpan = document.createElement('span');
-                // Short description (if present)
                 if (shortcut.short_description) {
-                   
-                    const svgDecor = `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15" viewBox="0 0 16 12"><path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0-4.97 1.2-6.51 6.13Z"></path></svg>`
-                   
-                    descriptionDiv.innerHTML= svgDecor;
-                    descriptionText.className = `bg-black/15 transition-all duration-200 leading-tight `;
-                    descriptionSpan.className = `truncate break-words py-0.5  text-white/80 pr-2 text-[0.78rem] -ml-1 transition-opacity duration-200`;
+                    const descriptionDiv = document.createElement('div');
+                    const descriptionText = document.createElement('p');
+                    const descriptionSpan = document.createElement('span');
+                    const svgDecor = `<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" class="pointer-events-none absolute left-0 h-full -translate-x-full text-black/15" viewBox="0 0 16 12"><path fill="currentColor" d="M9.49 6.13C8.07 10.7 6.09 12 0 12h16V0c-3.5 0-4.97 1.2-6.51 6.13Z"></path></svg>`;
+
+                    descriptionDiv.innerHTML = svgDecor;
+                    descriptionText.className = 'bg-black/15 transition duration-200 leading-tight';
+                    descriptionSpan.className = 'truncate break-words py-0.5 text-white/80 pr-2 text-[0.78rem] -ml-1 transition-opacity duration-200';
                     descriptionSpan.textContent = shortcut.short_description;
                     descriptionText.appendChild(descriptionSpan);
                     descriptionDiv.appendChild(descriptionText);
 
                     descriptionDiv.className = 'absolute bottom-0 right-0 z-40 flex max-w-[83%] items-center';
-      
                     linkCard.appendChild(descriptionDiv);
                 }
 
                 const iconsContainer = document.createElement('span');
                 iconsContainer.classList.add('shortcut-icons-container', 'gap-2', 'absolute', 'top-2', 'left-2', 'transition-opacity', 'text-lg', 'duration-200');
-                iconsContainerFlex = document.createElement('div');
+                const iconsContainerFlex = document.createElement('div');
                 iconsContainerFlex.classList.add('flex', 'gap-2','transition-opacity', 'text-lg', 'duration-200');
-            if (shortcut.pinned) {
-                const pinnedIcon = document.createElement('i');
-                pinnedIcon.className = 'favorited-icon  fa fa-solid drop-shadow-md  fa-bookmark  text-white cursor-pointer hover:text-slate-100 transition-opacity duration-200';
-              
-                iconsContainerFlex.appendChild(pinnedIcon);
-            }
-            else if (!shortcut.pinned) {
-                const pinnedIcon = document.createElement('i');
-                pinnedIcon.className = 'favorited-icon  fa fa-regular drop-shadow-md  fa-bookmark opacity-40 text-white cursor-pointer hover:text-slate-100 transition-opacity duration-200';
-              
-                iconsContainerFlex.appendChild(pinnedIcon);
-            }
-            if (shortcut.favorited) {
-                const favoritedIcon = document.createElement('i');
-                favoritedIcon.className = 'pinned-icon  fa fa-solid drop-shadow-md  fa-heart text-white cursor-pointer hover:text-slate-100 transition-opacity duration-200';
-              
-                iconsContainerFlex.appendChild(favoritedIcon);
-            }
-            else if (!shortcut.favorited) {
-                const favoritedIcon = document.createElement('i');
-                favoritedIcon.className = 'pinned-icon  fa fa-regular drop-shadow-md   fa-heart opacity-40 text-white cursor-pointer hover:text-slate-100 transition-opacity duration-200';
-              
-                iconsContainerFlex.appendChild(favoritedIcon);
-            }   
-            iconsContainer.appendChild(iconsContainerFlex);
-                // Trash icon for deletion
+
+                if (shortcut.pinned) {
+                    const pinnedIcon = document.createElement('i');
+                    pinnedIcon.className = 'favorited-icon fa fa-solid drop-shadow-md fa-bookmark text-white cursor-pointer hover:text-slate-100 transition-opacity duration-200';
+                    iconsContainerFlex.appendChild(pinnedIcon);
+                } else {
+                    const pinnedIcon = document.createElement('i');
+                    pinnedIcon.className = 'favorited-icon fa fa-regular drop-shadow-md fa-bookmark opacity-60 text-white cursor-pointer hover:text-slate-100 hover:opacity-100 transition duration-200';
+                    iconsContainerFlex.appendChild(pinnedIcon);
+                }
+
+                if (shortcut.favorited) {
+                    const favoritedIconEl = document.createElement('i');
+                    favoritedIconEl.className = 'pinned-icon fa fa-solid drop-shadow-md fa-heart text-white cursor-pointer hover:text-slate-100 transition-opacity duration-200';
+                    iconsContainerFlex.appendChild(favoritedIconEl);
+                } else {
+                    const favoritedIconEl = document.createElement('i');
+                    favoritedIconEl.className = 'pinned-icon fa fa-regular drop-shadow-md fa-heart opacity-60 text-white cursor-pointer hover:text-slate-100 hover:opacity-100 transition duration-200';
+                    iconsContainerFlex.appendChild(favoritedIconEl);
+                }
+
+                iconsContainer.appendChild(iconsContainerFlex);
+
                 const ActionIconsWR = document.createElement('span');
                 const trashIcon = document.createElement('i');
                 const editIcon = document.createElement('i');
                 ActionIconsWR.classList.add('action-items-container', 'absolute', 'bottom-2', 'left-2', 'opacity-0', 'transition-opacity', 'text-lg', 'duration-200');
-                trashIcon.className = 'trash-icon  fa fa-solid drop-shadow-md  fa-trash  text-white/80 cursor-pointer hover:text-white/100 transition-opacity duration-200';
-                editIcon.className = 'ml-2 edit-icon  fa fa-solid drop-shadow-md  fa-pencil  text-white/80 cursor-pointer hover:text-white/100 transition-opacity duration-200';
-                
+                trashIcon.className = 'trash-icon fa fa-solid drop-shadow-md fa-trash text-white/80 cursor-pointer hover:text-white transition-opacity duration-200';
+                editIcon.className = 'ml-2 edit-icon fa fa-solid drop-shadow-md fa-pencil text-white/80 cursor-pointer hover:text-white transition-opacity duration-200';
+
                 ActionIconsWR.appendChild(trashIcon);
                 ActionIconsWR.appendChild(editIcon);
-                
 
                 linkCard.appendChild(iconsContainer);
                 linkCard.appendChild(ActionIconsWR);
 
-                // Event listener for hover
                 linkCard.addEventListener('mouseenter', () => {
                     if (isCmdPressed) {
                         ActionIconsWR.classList.remove('opacity-0');
@@ -607,28 +596,30 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
                     iconContainer.classList.remove('hidden');
                     iconContainer.classList.remove('opacity-0');
                     statusBadgeContainer.classList.remove('opacity-0');
-                    descriptionSpan.classList.remove('text-white/80');
-                    descriptionSpan.classList.add('text-white');
-                    
+                    const descriptionSpan = linkCard.querySelector('.truncate.break-words');
+                    if (descriptionSpan) {
+                        descriptionSpan.classList.remove('text-white/80');
+                        descriptionSpan.classList.add('text-white');
+                    }
+
                     iconContainer.classList.add('opacity-80');
                     statusBadgeContainer.classList.add('opacity-100');
                     emojiContainer.classList.add('opacity-100');
                     emojiSpan.classList.remove('opacity-40');
                     emojiSpan.classList.add('opacity-100');
-
                 });
-               
 
                 linkCard.addEventListener('mouseleave', () => {
-                    
-                        ActionIconsWR.classList.add('opacity-0');
-                    
+                    ActionIconsWR.classList.add('opacity-0');
                     iconContainer.classList.add('opacity-0');
                     statusBadgeContainer.classList.add('opacity-0');
                     iconContainer.classList.remove('opacity-80');
                     statusBadgeContainer.classList.remove('opacity-100');
-                    descriptionSpan.classList.add('text-white/80');
-                    descriptionSpan.classList.remove('text-white');
+                    const descriptionSpan = linkCard.querySelector('.truncate.break-words');
+                    if (descriptionSpan) {
+                        descriptionSpan.classList.add('text-white/80');
+                        descriptionSpan.classList.remove('text-white');
+                    }
                     emojiContainer.classList.remove('opacity-100');
                     setTimeout(() => {
                         statusBadgeContainer.classList.add('hidden');
@@ -636,107 +627,89 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
                     }, 200);
                 });
 
-                       // Action confirmation handlers
-            trashIcon.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (confirm('Are you sure you want to delete this shortcut?')) {
-                    deleteShortcut(shortcut.id);
-                }
-            });
-
-            editIcon.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (confirm('Do you want to edit this shortcut?')) {
-                    openModal(shortcut);
-                }
-            });
-
-            // Add confirmation to favorite/pin actions
-            iconsContainer.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const target = e.target;
-                
-                if (target.classList.contains('fa-solid') || target.classList.contains('fa-regular')) {
-                    if (confirm('Do you want to change the favorite status of this shortcut?')) {
-                        // Toggle favorite status
-                        fetch(`/api/shortcuts/${shortcut.id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                ...shortcut,
-                                favorited: !shortcut.favorited
-                            })
-                        }).then(() => fetchShortcuts());
+                trashIcon.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (confirm('Are you sure you want to delete this shortcut?')) {
+                        deleteShortcut(shortcut.id);
                     }
-                }
-                
-                if (target.classList.contains('fa-bookmark') || target.classList.contains('fa-bookmark-o')) {
-                    if (confirm('Do you want to change the pinned status of this shortcut?')) {
-                        // Toggle pinned status
-                        fetch(`/api/shortcuts/${shortcut.id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                ...shortcut,
-                                pinned: !shortcut.pinned
-                            })
-                        }).then(() => fetchShortcuts());
-                    }
-                }
-            });
+                });
 
-                // Click event for emoji animation and navigation
+                editIcon.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (confirm('Do you want to edit this shortcut?')) {
+                        openModal(shortcut);
+                    }
+                });
+
+                iconsContainer.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const target = e.target;
+
+                    if (target.classList.contains('fa-heart')) {
+                        if (confirm('Do you want to change the favorite status of this shortcut?')) {
+                            fetch(`/api/shortcuts/${shortcut.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    ...shortcut,
+                                    favorited: !shortcut.favorited
+                                })
+                            }).then(() => fetchShortcuts());
+                        }
+                    }
+
+                    if (target.classList.contains('fa-bookmark')) {
+                        if (confirm('Do you want to change the pinned status of this shortcut?')) {
+                            fetch(`/api/shortcuts/${shortcut.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    ...shortcut,
+                                    pinned: !shortcut.pinned
+                                })
+                            }).then(() => fetchShortcuts());
+                        }
+                    }
+                });
+
                 linkCard.addEventListener('click', (event) => {
-                    event.preventDefault(); // Prevent immediate navigation
-                  
+                    event.preventDefault(); 
                     if (event.target.closest('.action-items-container')) return;
                     if (event.target.closest('.shortcut-icons-container')) return;
-                      const emojis = linkCard.querySelectorAll('.emoji')[0].innerHTML;
-                    // console.log(emojis);
-                    // const emojiArray = emojis.split(''); // Split emojis into an array
-                    const splitEmoji = (string) => [...new Intl.Segmenter().segment(string)].map(x => x.segment)
-                    // console.log(splitEmoji(emojis));
+                    const emojis = linkCard.querySelectorAll('.emoji')[0].innerHTML;
+                    const splitEmoji = (string) => [...new Intl.Segmenter().segment(string)].map(x => x.segment);
                     const count = 8;
                     for (let i = 0; i < count; i++) {
                         const x = event.pageX;
                         const y = event.pageY;
                         createEmoji(x, y, splitEmoji(emojis));
                     }
-                    // Navigate to the link after a short delay
                     setTimeout(() => {
                         window.open(shortcut.link, '_blank');
-                        
-                    }, 500); // Adjust delay as needed
+                    }, 500);
                 });
 
-                // Append the linkCard to the article
                 article.appendChild(linkCard);
 
-                // Card footer
                 const footer = document.createElement('header');
                 footer.className = 'mt-0 flex items-center overflow-hidden';
 
-                // Extract domain from URL
                 const domain = extractDomain(shortcut.link);
 
-                // Domain display
                 const domainLi = document.createElement('li');
                 domainLi.className = 'group relative flex items-center whitespace-nowrap';
                 const domainSpan = document.createElement('span');
                 domainSpan.className = 'flex items-center gap-1 text-slate-900 dark:text-blue-50 text-xs font-mono mt-1';
                 const favIconWrapper = document.createElement('span');
-                favIconWrapper.className = ' rounded m-1';
-                // Create the favicon image
-                
-              
+                favIconWrapper.className = 'rounded m-1';
 
-
-
-                // Create the favicon image
                 const faviconImg = document.createElement('img');
                 faviconImg.classList.add(
                     'w-5',
@@ -746,75 +719,48 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
                     'dark:bg-gray-700',
                     'rounded',
                     'skeleton-loading',
-                    // 'bg-[length:200px_100%]',
-                    // 'bg-left'
                 );
+                faviconImg.src = `/static/favicons/${domain}.png`;
+                faviconImg.onload = () => {
+                    faviconImg.classList.remove(
+                        'bg-gray-300',
+                        'dark:bg-gray-700',
+                        'skeleton-loading',
+                    );
+                };
+                faviconImg.onerror = () => {
+                    faviconImg.src = '/static/default/favicon.png';
+                    faviconImg.classList.add(
+                        'bg-gray-300',
+                        'dark:bg-gray-700',
+                        'skeleton-loading',
+                    );
+                };
 
-                 // Handle image loading
-  faviconImg.onload = () => {
-    // Remove skeleton classes after image loads
-    faviconImg.classList.remove(
-      'bg-gray-300',
-      'dark:bg-gray-700',
-      'skeleton-loading',
-    //   'bg-gradient-to-r',
-    //   'from-gray-300',
-    //   'to-gray-400',
-    //   'bg-[length:200px_100%]',
-    //   'bg-left'
-    );
-  };
+                const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const currentTheme = isDarkMode ? 'dark' : 'light';
+                faviconImg.src = `/favicons/get_favicon?domain=${encodeURIComponent(domain)}&theme=${currentTheme}`;
 
-  
-
-  // Determine theme preference
-  const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const theme = isDarkMode ? 'dark' : 'light';
-
-
-  faviconImg.src = `/get_favicon?domain=${encodeURIComponent(domain)}&theme=${theme}`;
-
-                // Create the domain text
                 const domainText = document.createElement('span');
                 domainText.textContent = domain;
 
-                // Append the favicon and text to the span
                 favIconWrapper.appendChild(faviconImg);
                 domainSpan.appendChild(favIconWrapper);
                 domainSpan.appendChild(domainText);
-
-                // Append the span to the list item
                 domainLi.appendChild(domainSpan);
-
                 footer.appendChild(domainLi);
-
-                // Append the footer to the article
                 article.appendChild(footer);
 
-                // Append the article to the grid
                 linksGrid.appendChild(article);
-
-                // Trigger reflow to enable the transition
                 void article.offsetWidth;
-
-                // Remove opacity-0 to start fade-in effect
                 article.classList.remove('opacity-0');
             });
 
-            if(favoritedFirstCheckbox.checked){
-            document.querySelectorAll('article').forEach(card => {
-                const isFavorited = card.querySelector('i.fa-solid.fa-heart');
-                if (isFavorited == null) {
-                card.classList.remove('opacity-100');
-                card.classList.add('opacity-10');
-                }
-            });
-
-        }
-        }, 200); // Match this delay with the duration of fade-out
+           
+        }, 200);
+        applyPinnedAndFavoriteStyling();
     }
 
-    // Helper function to extract domain from URL
     function extractDomain(url) {
         try {
             const hostname = new URL(url).hostname;
@@ -824,12 +770,10 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
         }
     }
 
-  
     function createEmoji(x, y, emojiArray) {
         const gravity = 0;
         const friction = 0.99;
-        
-        // Create multiple ripples with stagger
+
         for (let i = 0; i < 3; i++) {
             const ripple = document.createElement('div');
             ripple.style.position = 'absolute';
@@ -847,11 +791,9 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
             ripple.style.width = '50px';
             ripple.style.height = '50px';
 
-            // Remove ripple after animation
             setTimeout(() => ripple.remove(), 500 + (i * 100));
         }
 
-        // Create emojis with stagger
         for (let i = 0; i < emojiArray.length; i++) {
             setTimeout(() => {
                 const emojiElement = document.createElement('span');
@@ -886,10 +828,9 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
                     }
                 }
                 update();
-            }, i * 10); // 10ms stagger between each emoji
+            }, i * 10);
         }
 
-        // Add keyframe animation for ripple effect
         if (!document.querySelector('#rippleAnimation')) {
             const style = document.createElement('style');
             style.id = 'rippleAnimation';
@@ -911,138 +852,151 @@ document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
             document.head.appendChild(style);
         }
     }
- // Fetch and render tags
- 
-function fetchTags() {
-    fetch('/api/tags')
-    .then(response => response.json())
-    .then(data => {
-        srenderTags(data);
-    })
-    .catch(error => {
-        console.error('Error fetching tags:', error);
-    });
-}
+    let tagParentMap = {}; // global map: tagId -> parentId
 
-
-function renderTagTree(tags, container, level = 0) {
-    tags.forEach((tag, index) => {
-        const isLast = index === tags.length - 1;
-
-        // Main container for each tag item
-        const tagItemWrap = document.createElement('div');
-        tagItemWrap.className = 'flex h-[28px] w-full items-center justify-between gap-1.5';
-        tagItemWrap.style.paddingLeft = `${level * 20}px`; // Adjust padding based on level
-
-        // Icon container
-        const iconContainer = document.createElement('div');
-        iconContainer.className = 'relative h-[28px] w-[19px] flex-none';
-
-        // Left vertical line
-        const leftLine = document.createElement('div');
-        leftLine.className = 'left absolute inset-y-0 -top-[3px] left-0 w-px bg-gray-300 dark:bg-gray-700';
-        if (isLast) {
-            leftLine.style.bottom = '28px'; // Adjust the bottom position for the last item
-        }
-        iconContainer.appendChild(leftLine);
-
-        // SVG icon
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('class', 'text-gray-300 dark:text-gray-700');
-        svg.setAttribute('width', '19');
-        svg.setAttribute('height', '28');
-        svg.setAttribute('viewBox', '0 0 19 28');
-        svg.innerHTML = '<path fill-rule="evenodd" clip-rule="evenodd" d="M1 0C1 7.42391 7.4588 13.5 15.5 13.5V14.5C6.9726 14.5 0 8.04006 0 0H1Z" fill="currentColor"></path>';
-        iconContainer.appendChild(svg);
-
-        tagItemWrap.appendChild(iconContainer);
-
-        // Tag name
-        const tagName = document.createElement('div');
-        tagName.className = 'font-semibold';
-        tagName.textContent = tag.name;
-        tagItemWrap.appendChild(tagName);
-
-        // Separator line
-        const separatorLine = document.createElement('div');
-        separatorLine.className = 'mx-3 flex-1 translate-y-[2.5px] self-center border-b border-dotted dark:border-gray-800';
-        tagItemWrap.appendChild(separatorLine);
-
-        // Tag link with count
-        const tagLink = document.createElement('a');
-        tagLink.className = 'text-gray-700 underline decoration-gray-300 hover:text-gray-900 hover:decoration-gray-600 dark:text-gray-300 dark:decoration-gray-500 dark:hover:text-gray-100 dark:hover:decoration-gray-200';
-        tagLink.href = `#`; // Adjust the URL as needed
-        tagLink.textContent = `${tag.count} Tags`;
-        tagItemWrap.appendChild(tagLink);
-
-        // Event listener for the tag link
-        tagLink.addEventListener('click', (e) => {
+    function fetchTags() {
+      return fetch('/api/tags')
+        .then(response => response.json())
+        .then(data => {
+          srenderTags(data);
+          buildTagParentMap(data);
+          updateFilterStyles(); // Apply styling after tags load
+        })
+        .catch(error => { console.error('Error fetching tags:', error); });
+    }
+    function buildTagParentMap(tags, parentId = null) {
+        tags.forEach(tag => {
+          tagParentMap[tag.id] = parentId; // This tag's parent is parentId
+          if (tag.children && tag.children.length > 0) {
+            buildTagParentMap(tag.children, tag.id);
+          }
+        });
+      }
+      function buildTagsTree(tags, parentTagId) {
+        const ul = document.createElement('ul');
+      
+        tags.forEach(tag => {
+          const li = document.createElement('li');
+          const tagLink = document.createElement('a');
+          tagLink.textContent = `${tag.name} (${tag.count})`;
+          tagLink.classList.add('tag-link');
+          tagLink.href = '#';
+          tagLink.setAttribute('data-tag-id', tag.id); // Ensure tag ID is correctly set
+      
+          tagLink.addEventListener('click', (e) => {
             e.preventDefault();
-            const tagId = tag.id;
-            if (tagId) {
-                handleTagSelection(parseInt(tagId));
-                tagLink.classList.toggle('selected');
-                fetchTags();
+            handleTagClick(tagLink); // Use the click handler
+          });
+      
+          li.appendChild(tagLink);
+      
+          if (tag.children && tag.children.length > 0) {
+            const childUl = buildTagsTree(tag.children, tag.id);
+            li.appendChild(childUl);
+          }
+      
+          ul.appendChild(li);
+        });
+      
+        return ul;
+      }
+    function renderTagTree(tags, container, level = 0) {
+        tags.forEach((tag, index) => {
+            const isLast = index === tags.length - 1;
+            const isParent = level == 0;
+            const hasChildrenTree = tag.children && tag.children.length > 0;
+
+            const tagItemWrap = document.createElement('div');
+            tagItemWrap.className = 'flex h-[28px] transition duration-300 w-full items-center justify-between gap-2 tag-link overflow-hidden';
+
+            tagItemWrap.setAttribute('data-tag-id', tag.id);
+            if(!isParent){
+                tagItemWrap.classList.add('-mt-1');
+            }
+            const iconContainer = document.createElement('div');
+            iconContainer.className = 'relative h-[28px] w-[19px] flex-none ';
+            iconContainer.style.marginLeft = `${level * 20}px`;
+
+            let leftLine = document.createElement('div');
+            leftLine.className = 'left absolute inset-y-0 -top-[3px] left-0 w-px bg-gray-300 dark:bg-gray-600';
+
+            let leftLineParent = document.createElement('div');
+            leftLineParent.className = 'left relative  h-[28px] inset-y-0 -top-[3px] left-0 w-px bg-gray-300 dark:bg-gray-600';
+
+            
+            if (isLast) {
+                leftLine.style.bottom = '28px';
+            } else if (level != 0){
+                    tagItemWrap.appendChild(leftLineParent);
+            }
+            iconContainer.appendChild(leftLine);
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'text-gray-300 dark:text-gray-600');
+            svg.setAttribute('width', '19');
+            svg.setAttribute('height', '28');
+            svg.setAttribute('viewBox', '0 0 19 28');
+            svg.innerHTML = '<path fill-rule="evenodd" clip-rule="evenodd" d="M1 0C1 7.42391 7.4588 13.5 15.5 13.5V14.5C6.9726 14.5 0 8.04006 0 0H1Z" fill="currentColor"></path>';
+            iconContainer.appendChild(svg);
+
+            let iconExpandContainer = document.createElement('div');
+            let iconExpand = document.createElement('i');
+            if(hasChildrenTree){
+                
+            iconExpand.className = 'fa fa-solid fa-caret-down text-gray-300 dark:text-gray-300';
+            }
+            else{
+
+            iconExpand.className = 'fa fa-solid fa-2xs fa-circle-small text-gray-300 dark:text-gray-400';
+            }
+            iconExpand.style.marginLeft = '-11px';
+            iconExpand.style.marginTop = '3px';
+            tagItemWrap.appendChild(iconContainer);
+            
+            iconExpandContainer.appendChild(iconExpand);
+            tagItemWrap.appendChild(iconExpandContainer);
+
+            const tagName = document.createElement('div');
+            tagName.className = 'font-medium text-gray-700 dark:text-gray-400 text-sm';
+            tagName.textContent = tag.name;
+            tagName.setAttribute('data-tag-id', tag.id);
+            tagItemWrap.appendChild(tagName);
+
+            const separatorLine = document.createElement('div');
+            separatorLine.className = 'mx-3 flex-1 translate-y-[2.5px] self-center border-b border-dotted dark:border-gray-800';
+            tagItemWrap.appendChild(separatorLine);
+
+            const tagLink = document.createElement('a');
+            tagLink.className = 'text-gray-700 rounded text-xs bg-indigo/10 dark:bg-white/5 font-semibold px-1 py-0.5 text-center decoration-gray-300 hover:text-gray-900 hover:decoration-gray-600 dark:text-gray-400/70 dark:decoration-gray-500 dark:hover:text-gray-100 dark:hover:decoration-gray-200';
+            tagLink.href = `#`;
+            tagLink.innerHTML = `${tag.count} <i class="fa fa-xs fa-link"></i>`;
+
+            tagItemWrap.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tagId = tag.id;
+                if (tagId) {
+                    handleTagClick((tagItemWrap));
+                    tagName.classList.toggle('selected');
+                }
+            });
+            // tagLink.addEventListener('click', (e) => {
+            //     e.preventDefault();
+            //     const tagId = tag.id;
+            //     if (tagId) {
+            //         handleTagSelection(parseInt(tagId));
+            //         tagLink.classList.toggle('selected');
+            //     }
+            // });
+
+            tagItemWrap.appendChild(tagLink);
+
+            container.appendChild(tagItemWrap);
+
+            if (hasChildrenTree) {
+                renderTagTree(tag.children, container, level + 1);
             }
         });
-
-        container.appendChild(tagItemWrap);
-
-        // Recursively render child tags
-        if (tag.children && tag.children.length > 0) {
-            renderTagTree(tag.children, container, level + 1);
-        }
-    });
-}
-
-function renderTags(tagsData) {
-    tagsToolbar.innerHTML = '';
-
-    function createTagElement(tag) {
-        const tagItem = document.createElement('div');
-        tagItem.classList.add('tag-item');
-
-        const tagLabel = document.createElement('label');
-        tagLabel.classList.add('tag-label', 'cursor-pointer');
-        tagLabel.textContent = `${tag.name} (${tag.count})`;
-
-        tagLabel.addEventListener('click', () => {
-            handleTagSelection(tag.id);
-            tagLabel.classList.toggle('selected');
-        });
-
-        tagItem.appendChild(tagLabel);
-
-        if (tag.children && tag.children.length > 0) {
-            const childTagsContainer = document.createElement('div');
-            childTagsContainer.classList.add('child-tags');
-
-            tag.children.forEach(childTag => {
-                const childTagItem = createTagElement(childTag);
-                childTagsContainer.appendChild(childTagItem);
-            });
-
-            tagItem.appendChild(childTagsContainer);
-        }
-
-        return tagItem;
     }
-
-    tagsData.forEach(tag => {
-        const tagElement = createTagElement(tag);
-        tagsToolbar.appendChild(tagElement);
-    });
-}
-
-function handleTagSelection(tagId) {
-    const index = selectedTags.indexOf(tagId);
-    if (index > -1) {
-        selectedTags.splice(index, 1);
-    } else {
-        selectedTags.push(tagId);
-    }
-    fetchShortcuts();
-}
 
     function renderTagsDropdown(tags) {
         tagsDropdown.innerHTML = '';
@@ -1066,14 +1020,10 @@ function handleTagSelection(tagId) {
         tagsDropdown.classList.remove('hidden');
     }
 
-    
-
-    // Event listener for cmd/ctrl key
     window.addEventListener('keydown', (e) => {
         if (e.metaKey || e.ctrlKey) {
             isCmdPressed = true;
-            // Show trash icons on currently hovered cards
-            document.querySelectorAll('.link-card:hover .actions-items-contaienr').forEach(icon => {
+            document.querySelectorAll('.link-card:hover .action-items-container').forEach(icon => {
                 icon.classList.remove('opacity-0');
             });
         }
@@ -1082,8 +1032,7 @@ function handleTagSelection(tagId) {
     window.addEventListener('keyup', (e) => {
         if (!e.metaKey && !e.ctrlKey) {
             isCmdPressed = false;
-            // Hide all trash icons
-            document.querySelectorAll(' .actions-items-contaienr').forEach(icon => {
+            document.querySelectorAll('.action-items-container').forEach(icon => {
                 icon.classList.add('opacity-0');
             });
         }
@@ -1091,55 +1040,58 @@ function handleTagSelection(tagId) {
 
     favFilterContainer.addEventListener('click', (e) => {
         e.preventDefault();
-        favoritedFirstCheckbox.checked = !favoritedFirstCheckbox.checked;
-        
-        if (favoritedFirstCheckbox.checked) {
-            
-            favoritedIcon.classList.remove('fa-regular', 'text-slate-700');
-            favoritedIcon.classList.add('fa-solid', 'dark:text-white','animate-ping');
-            favFilterContainer.classList.add('dark:bg-red-500','dark:hover:bg-red-800');
-            favFilterContainer.classList.remove('opacity-60');
-            favoritedText.classList.add('text-white');
-            
-            fetchShortcuts();
-            // Update opacity for all shortcuts 
-            
-           
+        favoritedOnly = !favoritedOnly;
+        const icon = favFilterContainer.querySelector('i');
+      
+        if (favoritedOnly) {
+          // Active state: use a distinct accent color
+          favFilterContainer.classList.add('bg-indigo-500/20');
+          icon.classList.remove('fa-regular');
+          icon.classList.add('fa-solid', 'text-red-400');
         } else {
-            favoritedIcon.classList.remove('fa-solid', 'text-white');
-            favoritedIcon.classList.add('fa-regular', 'text-red-700');
-            favFilterContainer.classList.remove('dark:from-red-500', 'dark:to-red-700','dark:hover:to-red-800');
-            favoritedText.classList.remove('text-white');
-            favoritedText.classList.add('text-red-700');
-            favFilterContainer.classList.add('opacity-60');
-            
-            fetchShortcuts(favoritedFirstCheckbox.checked);
-            // Reset opacity for all shortcuts
-            document.querySelectorAll('article.link-card').forEach(card => {
-                card.classList.remove('opacity-50');
-                card.classList.add('opacity-100');
-            });
+          // Inactive state
+          favFilterContainer.classList.remove('bg-indigo-500/20');
+          icon.classList.remove('fa-solid', 'text-red-400');
+          icon.classList.add('fa-regular');
         }
-       
-        // fetchShortcuts();
-    });
-    
+      
+        fetchShortcuts().then(() => {
+            applyPinnedAndFavoriteStyling();
+          });
+      });
+      
 
-    // Open modal for adding/editing
+      pinnedFilterContainer.addEventListener('click', (e) => {
+        e.preventDefault();
+        pinnedOnly = !pinnedOnly;
+        const icon = pinnedFilterContainer.querySelector('i');
+      
+        if (pinnedOnly) {
+          pinnedFilterContainer.classList.add('bg-indigo-500/20');
+          icon.classList.remove('fa-regular');
+          icon.classList.add('fa-solid', 'text-amber-400');
+        } else {
+          pinnedFilterContainer.classList.remove('bg-indigo-500/20');
+          icon.classList.remove('fa-solid', 'text-amber-400');
+          icon.classList.add('fa-regular');
+        }
+      
+        fetchShortcuts().then(() => {
+            applyPinnedAndFavoriteStyling();
+          });
+      });
+
     addLinkBtn.addEventListener('click', () => openModal());
 
-    // Close modal
-    // closeModalBtn.addEventListener('click', closeModal);
     window.addEventListener('click', (event) => {
         if (event.target === ContainerModal) {
             closeModal();
         }
     });
 
-     // Handle form submission
-     linkForm.addEventListener('submit', (e) => {
-        e.preventDefault(); // Prevent default form submission
-        
+    linkForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
         const shortcutData = {
             id: linkIdField.value,
             name: linkNameField.value,
@@ -1153,10 +1105,10 @@ function handleTagSelection(tagId) {
             pinned: pinnedField.checked,
             favorited: favoritedField.checked
         };
-    
+
         const method = shortcutData.id ? 'PUT' : 'POST';
         const url = shortcutData.id ? `/api/shortcuts/${shortcutData.id}` : '/api/shortcuts';
-    
+
         fetch(url, {
             method: method,
             headers: {
@@ -1180,8 +1132,7 @@ function handleTagSelection(tagId) {
             alert('Error saving shortcut: ' + error.message);
         });
     });
-   
-    // Delete shortcut
+
     function deleteShortcut(id) {
         if (confirm('Are you sure you want to delete this link shortcut?')) {
             fetch(`/api/shortcuts/${id}`, {
@@ -1197,38 +1148,183 @@ function handleTagSelection(tagId) {
         }
     }
 
-
-    function getImageLuminance(img) {
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        context.drawImage(img, 0, 0, img.width, img.height);
-        const imageData = context.getImageData(0, 0, img.width, img.height).data;
-        let totalLuminance = 0;
-        let pixelCount = 0;
-        for (let i = 0; i < imageData.length; i += 4) {
-            const r = imageData[i];
-            const g = imageData[i + 1];
-            const b = imageData[i + 2];
-            const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-            totalLuminance += luminance;
-            pixelCount++;
-        }
-        return (totalLuminance / pixelCount) / 255;
-    }
-
-    // Convert HEX to RGBA
-    function hexToRgba(hex) {
+    function hexToRgb(hex) {
         const bigint = parseInt(hex.slice(1), 16);
         const r = (bigint >> 16) & 255;
         const g = (bigint >> 8) & 255;
         const b = bigint & 255;
-        return `rgba(${r}, ${g}, ${b}, 1)`;
+        return {r, g, b};
     }
+
+    function getLuminance(r, g, b) {
+        let R = r/255;
+        let G = g/255;
+        let B = b/255;
+
+        R = R <= 0.03928 ? R/12.92 : ((R+0.055)/1.055)**2.4;
+        G = G <= 0.03928 ? G/12.92 : ((G+0.055)/1.055)**2.4;
+        B = B <= 0.03928 ? B/12.92 : ((B+0.055)/1.055)**2.4;
+
+        return 0.2126*R + 0.7152*G + 0.0722*B;
+    }
+
+    function calculateAverageLuminance(color1Hex, color2Hex) {
+        const c1 = hexToRgb(color1Hex);
+        const c2 = hexToRgb(color2Hex);
+
+        const avgR = (c1.r + c2.r) / 2;
+        const avgG = (c1.g + c2.g) / 2;
+        const avgB = (c1.b + c2.b) / 2;
+
+        return getLuminance(avgR, avgG, avgB);
+    }
+    let currentDomains = [];
+let allDomainsActive = true; // If no domain filters are active
+
+
+// Add an "All Domains" chip if needed:
+if (allDomainsActive) {
+  const chip = createFilterChip('All Domains', () => {
+    // This would do nothing or toggle to show all domains, since it's already all.
+  });
+  filtersactive_bar.appendChild(chip);
+}
+
+function updateFilterStyles() {
+    // Domain filters styling
+    const domainElements = document.querySelectorAll('.domain-filter');
+    if (allDomainsActive) {
+        // No domain filters: all should have full opacity and no inactive classes
+        domainElements.forEach(el => {
+          el.classList.remove('opacity-20', 'hover:opacity-70');
+          // Add default styling classes as needed
+        });
+      } else {
+    domainElements.forEach(el => {
+      const domain = el.getAttribute('data-domain');
+      if (currentDomains.includes(domain)) {
+        // Active
+        el.classList.remove('opacity-20', 'hover:opacity-70');
+        el.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+      } else {
+        // Inactive
+        el.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+        el.classList.add('opacity-20', 'hover:opacity-70');
+      }
+    });
+    }
+    // Tag filters styling:
+    const allTagLinks = document.querySelectorAll('#tagsTree .tag-link');
+
+    allTagLinks.forEach(link => {
+      const tagId = parseInt(link.getAttribute('data-tag-id'));
+      if (selectedTags.includes(tagId)) {
+        // Tag is selected
+        link.classList.add('text-white','opacity-100');
+        link.classList.remove('opacity-20', 'hover:opacity-70', 'max-h-0');
+      } else {
+        // Tag is not selected
+        link.classList.remove('text-white','opacity-100','max-h-0');
+        if(tagSelected)
+            {
+                link.classList.add('opacity-20', 'hover:opacity-70');}
+        if(tagSelected && selectedTags.length > 0){
+            link.classList.add('max-h-0');
+        }
+      }
+    });
+    
+  }
+  
+  // A helper function to get visible tag IDs for the selected tags:
+  function getVisibleTagIdsForSelection(selectedTagIds) {
+    // Assuming we have a data structure with tag hierarchies available or stored after fetch.
+    // If not available, we must store tags in a global variable after fetch.
+    // For now, pseudo-code:
+    const visibleIds = [];
+    selectedTagIds.forEach(id => {
+      // Add the selected tag
+      visibleIds.push(id);
+      // Add its parents (if we maintain a parent mapping)
+      let parentId = tagParentMap[id];
+      while (parentId) {
+        visibleIds.push(parentId);
+        parentId = tagParentMap[parentId];
+      }
+    });
+    return visibleIds;
+  }
+
+  function handleTagSelection(tagId) {
+    const index = selectedTags.indexOf(tagId);
+    if (index > -1) {
+      selectedTags.splice(index, 1);
+    } else {
+      selectedTags.push(tagId);
+    }
+    fetchShortcuts().then(() => {
+      updateFilterStyles();
+    });
+  }
+  // Add this function to handle tag clicks
+function handleTagClick(tagElement) {
+    const tagId = parseInt(tagElement.getAttribute('data-tag-id'));
+    const tagIndex = selectedTags.indexOf(tagId);
+    tagSelected = true;
+    if (tagIndex > -1) {
+      // Tag is already selected; remove it
+      selectedTags.splice(tagIndex, 1);
+    } else {
+      // Tag is not selected; add it
+      selectedTags.push(tagId);
+    }
+  
+    // updateFilterChips(); // Update the UI to reflect active filters
+    updateFilterStyles(); // Update styles based on current selections
+    fetchShortcuts();     // Fetch and display shortcuts matching the filters
+  }
+  
+  function setDomainFilter(domain) {
+    if (!currentDomains.includes(domain)) {
+      currentDomains.push(domain);
+      allDomainsActive = false;
+      fetchShortcuts({domain: currentDomains}).then(() => {
+        updateFilterStyles();
+      });
+    }
+  }
+  
+  function removeDomainFilter(domain) {
+    const idx = currentDomains.indexOf(domain);
+    if (idx > -1) {
+      currentDomains.splice(idx, 1);
+    }
+    if (currentDomains.length === 0) {
+      allDomainsActive = true;
+    }
+    fetchShortcuts().then(() => {
+      updateFilterStyles();
+    });
+  }
+  
+      
+      function createFilterChip(label, removeCallback) {
+        const chip = document.createElement('div');
+        chip.className = 'flex items-center bg-indigo-200 text-indigo-800 px-2 py-1 rounded-full text-sm';
+        chip.textContent = label;
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'ml-2 text-indigo-900 hover:text-indigo-700';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.setAttribute('aria-label', 'Remove filter ' + label);
+        removeBtn.addEventListener('click', removeCallback);
+        
+        chip.appendChild(removeBtn);
+        return chip;
+      }
+
     function openModal(shortcut = null) {
         if (shortcut) {
-            // Editing existing shortcut
             linkIdField.value = shortcut.id;
             linkNameField.value = shortcut.name;
             linkUrlField.value = shortcut.link;
@@ -1241,7 +1337,6 @@ function handleTagSelection(tagId) {
             pinnedField.checked = shortcut.pinned;
             favoritedField.checked = shortcut.favorited;
         } else {
-            // Adding new shortcut
             linkForm.reset();
             linkIdField.value = '';
         }
@@ -1254,68 +1349,6 @@ function handleTagSelection(tagId) {
         containerModal.classList.add('hidden');
     }
 
-      // Function to calculate average luminance of two colors
-      function calculateAverageLuminance(color1, color2) {
-        const luminance1 = getLuminance(color1);
-        const luminance2 = getLuminance(color2);
-        return (luminance1 + luminance2) / 2;
-    }
-
-    // Function to calculate luminance of a color
-    function getLuminance(rgba) {
-        const rgb = rgba.replace(/^rgba?\(|\s+|\)$/g, '').split(',');
-        const r = parseInt(rgb[0]) / 255;
-        const g = parseInt(rgb[1]) / 255;
-        const b = parseInt(rgb[2]) / 255;
-        // Use the luminance formula
-        return 0.299 * r + 0.587 * g + 0.114 * b;
-    }
-
-    // Convert RGBA to HEX
-    function rgbToHex(rgba) {
-        const rgb = rgba.replace(/^rgba?\(|\s+|\)$/g, '').split(',');
-        return `#${((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1)}`;
-    }
-
-    
-        // Event listeners
-        // searchInput.addEventListener('input', fetchShortcuts);
-        // selectedSort.addEventListener('click', fetchShortcuts);
-    
-       
-    // Fetch initial data
-
-    // Enable dragging to scroll on tagsToolbar
-    // let isDragging = false;
-    // let startX;
-    // let scrollLeft;
-
-    // tagsToolbar.addEventListener('mousedown', (e) => {
-    //     isDragging = true;
-    //     tagsToolbar.classList.add('dragging');
-    //     startX = e.pageX - tagsToolbar.offsetLeft;
-    //     scrollLeft = tagsToolbar.scrollLeft;
-    // });
-
-    // tagsToolbar.addEventListener('mouseleave', () => {
-    //     isDragging = false;
-    //     tagsToolbar.classList.remove('dragging');
-    // });
-
-    // tagsToolbar.addEventListener('mouseup', () => {
-    //     isDragging = false;
-    //     tagsToolbar.classList.remove('dragging');
-    // });
-
-    // tagsToolbar.addEventListener('mousemove', (e) => {
-    //     if (!isDragging) return;
-    //     e.preventDefault();
-    //     const x = e.pageX - tagsToolbar.offsetLeft;
-    //     const walk = (x - startX) * 1; // Adjust scroll speed
-    //     tagsToolbar.scrollLeft = scrollLeft - walk;
-    // });
-
-    // Fetch and render tags
     fetch('/api/tags')
         .then(response => response.json())
         .then(data => {
@@ -1325,7 +1358,6 @@ function handleTagSelection(tagId) {
             console.error('Error fetching tags:', error);
         });
 
-  
-        fetchShortcuts();
-        fetchTags();
+    fetchShortcuts();
+    fetchTags();
 });

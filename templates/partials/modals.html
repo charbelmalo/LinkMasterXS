@@ -1,0 +1,70 @@
+<!-- templates/partials/modals.html -->
+<div id="modal-container" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div id="linkModal" class="modal p-6 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
+      <span id="closeModal" class="close float-right text-gray-500 cursor-pointer">&times;</span>
+      <h2 id="modalTitle" class="mb-4 text-xl font-bold">Add Link Shortcut</h2>
+      <form id="linkForm" class="space-y-4">
+        <input type="hidden" id="linkId">
+        <div class="mb-4">
+          <label for="linkName" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Name</label>
+          <input type="text" id="linkName" required class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-700 
+         bg-white dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 
+         focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition">
+        </div>
+        <div class="mb-4">
+          <label for="linkUrl" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Link</label>
+          <input type="url" id="linkUrl" required class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-700 
+         bg-white dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 
+         focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition">
+        </div>
+        <div class="mb-4 relative">
+          <label for="linkTags" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Tags (use ',' and '>' for hierarchy)</label>
+          <input type="text" id="linkTags" class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-700 
+         bg-white dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 
+         focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition" autocomplete="off">
+          <div id="tagsDropdown" class="absolute z-10 w-full bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded shadow-lg max-h-48 overflow-y-auto hidden"></div>
+        </div>
+        <div class="mb-4">
+          <label for="linkEmojis" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Emojis</label>
+          <input type="text" id="linkEmojis" class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-700 
+         bg-white dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 
+         focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition">
+        </div>
+        <div class="mb-4 flex">
+          <div class="flex-1 pr-3">
+            <label for="colorFrom" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Color From</label>
+            <input type="color" id="colorFrom" value="#ffffff" class="h-10 w-14 cursor-pointer rounded-md border border-gray-300 dark:border-gray-700 
+         bg-white dark:bg-gray-900/50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition">
+          </div>
+          <div class="flex-1 pr-3">
+            <label for="colorTo" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Color To</label>
+            <input type="color" id="colorTo" value="#ffffff" class="h-10 w-14 cursor-pointer rounded-md border border-gray-300 dark:border-gray-700 
+         bg-white dark:bg-gray-900/50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition">
+          </div>
+          <div class="flex-1">
+            <label for="score" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Score (0.0 to 10.0)</label>
+            <input type="number" id="score" min="0" max="10" step="0.1" class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-700 
+         bg-white dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 
+         focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label for="shortDescription" class="block mb-2 text-sm font-bold text-gray-700 dark:text-gray-300">Short Description</label>
+          <textarea id="shortDescription" class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 dark:border-gray-700
+         bg-white dark:bg-gray-900/50 text-gray-900 dark:text-gray-100 placeholder-gray-400
+         focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition"></textarea>
+        </div>
+        <div class="mb-4 flex items-center">
+          <label class="flex items-center mr-4 text-gray-700 dark:text-gray-300">
+            <input type="checkbox" id="pinned" class="mr-2 rounded"> Pinned
+          </label>
+          <label class="flex items-center text-gray-700 dark:text-gray-300">
+            <input type="checkbox" id="favorited" class="mr-2 rounded"> Favorited
+          </label>
+        </div>
+        <button type="submit" id="saveLinkBtn" class="btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+          Save
+        </button>
+      </form>
+    </div>
+  </div>
