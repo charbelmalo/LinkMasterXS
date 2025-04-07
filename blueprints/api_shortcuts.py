@@ -1,10 +1,15 @@
 # blueprints/api_shortcuts.py
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from models import Shortcut, Tag, db
 from sqlalchemy import func
 from datetime import datetime
 from .utils import process_tags  # Create a utils.py for shared functions if needed
+import logging
+import requests
+import urllib.parse
+
+from bs4 import BeautifulSoup
 
 shortcuts_bp = Blueprint('shortcuts', __name__)
 
@@ -145,3 +150,69 @@ def increment_click(shortcut_id):
     shortcut.click_count = (shortcut.click_count or 0) + 1
     db.session.commit()
     return jsonify({'message': 'Click count incremented', 'click_count': shortcut.click_count}), 200
+
+ 
+from PIL import Image
+from colorthief import ColorThief
+import tempfile
+
+@shortcuts_bp.route('/autofill', methods=['GET'])
+@login_required
+def autofill():
+    link = request.args.get('url')
+    if not link or not (link.startswith('http://') or link.startswith('https://')):
+        return jsonify({"error": "Invalid URL"}), 400
+
+    try:
+        # Fetch page
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        r = requests.get(link, headers=headers, timeout=3)
+        if r.status_code != 200:
+            return jsonify({"error": "Cannot access URL"}), 400
+
+        # Parse for metadata
+        soup = BeautifulSoup(r.text, 'html.parser')
+        # Try to get title
+        title = soup.title.string.strip() if soup.title else 'Untitled'
+        # Try meta description
+        meta_desc = soup.find('meta', attrs={'name': 'description'})
+        short_description = meta_desc['content'].strip() if meta_desc and meta_desc.has_attr('content') else ""
+
+        # Try favicon
+        domain = urllib.parse.urlparse(link).hostname
+        # Get favicon from our existing route
+        favicon_url = f"http://localhost:5000/favicons/get_favicon?domain={domain}&theme=light"
+        fav_r = requests.get(favicon_url, timeout=3)
+        if fav_r.status_code == 200:
+            # Extract dominant colors
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
+                tmp.write(fav_r.content)
+                tmp.flush()
+                color_thief = ColorThief(tmp.name)
+                # Get dominant palette
+                palette = color_thief.get_palette(color_count=2)
+                # Convert to hex
+                def rgb_to_hex(rgb):
+                    return '#%02x%02x%02x' % rgb
+                if len(palette) < 2:
+                    # Just duplicate the same color if we can't find two distinct
+                    palette.append(palette[0])
+                color_from_hex = rgb_to_hex(palette[0])
+                color_to_hex = rgb_to_hex(palette[1])
+        else:
+            # Default colors
+            color_from_hex = "#ffffff"
+            color_to_hex = "#ffffff"
+
+        data = {
+            "name": title,
+            "emoji": "📟",
+            "colorFrom": color_from_hex,
+            "colorTo": color_to_hex,
+            "short_description": short_description
+        }
+        return jsonify(data), 200
+
+    except Exception as e:
+        logging.error(f"Autofill error: {e}")
+        return jsonify({"error": "Failed to autofill"}), 500

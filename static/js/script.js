@@ -550,30 +550,24 @@ function applyPinnedAndFavoriteStyling() {
 
                 const iconsContainer = document.createElement('span');
                 iconsContainer.classList.add('shortcut-icons-container', 'gap-2', 'absolute', 'top-2', 'left-2', 'transition-opacity', 'text-lg', 'duration-200');
+    
                 const iconsContainerFlex = document.createElement('div');
-                iconsContainerFlex.classList.add('flex', 'gap-2','transition-opacity', 'text-lg', 'duration-200');
-
-                if (shortcut.pinned) {
-                    const pinnedIcon = document.createElement('i');
-                    pinnedIcon.className = 'favorited-icon fa fa-solid drop-shadow-md fa-bookmark text-white cursor-pointer hover:text-slate-100 transition-opacity duration-200';
-                    iconsContainerFlex.appendChild(pinnedIcon);
-                } else {
-                    const pinnedIcon = document.createElement('i');
-                    pinnedIcon.className = 'favorited-icon fa fa-regular drop-shadow-md fa-bookmark opacity-60 text-white cursor-pointer hover:text-slate-100 hover:opacity-100 transition duration-200';
-                    iconsContainerFlex.appendChild(pinnedIcon);
-                }
-
-                if (shortcut.favorited) {
-                    const favoritedIconEl = document.createElement('i');
-                    favoritedIconEl.className = 'pinned-icon fa fa-solid drop-shadow-md fa-heart text-white cursor-pointer hover:text-slate-100 transition-opacity duration-200';
-                    iconsContainerFlex.appendChild(favoritedIconEl);
-                } else {
-                    const favoritedIconEl = document.createElement('i');
-                    favoritedIconEl.className = 'pinned-icon fa fa-regular drop-shadow-md fa-heart opacity-60 text-white cursor-pointer hover:text-slate-100 hover:opacity-100 transition duration-200';
-                    iconsContainerFlex.appendChild(favoritedIconEl);
-                }
-
+                iconsContainerFlex.classList.add('flex', 'gap-2', 'transition-opacity', 'duration-200');
+    
+                // pinned icon
+                const pinnedIcon = document.createElement('i');
+                pinnedIcon.className = shortcut.pinned ? 'fa fa-solid fa-bookmark text-white cursor-pointer ' : 'fa fa-regular hidden fa-bookmark text-white cursor-pointer  opacity-0';
+                iconsContainerFlex.appendChild(pinnedIcon);
+    
+                // favorited icon
+                const favoritedIconEl = document.createElement('i');
+                favoritedIconEl.className = shortcut.favorited ? 'fa fa-solid fa-heart text-white cursor-pointer ' : 'fa fa-regular hidden fa-heart text-white cursor-pointer  opacity-0';
+                iconsContainerFlex.appendChild(favoritedIconEl);
+    
                 iconsContainer.appendChild(iconsContainerFlex);
+                linkCard.appendChild(iconsContainer);
+    
+            
 
                 const ActionIconsWR = document.createElement('span');
                 const trashIcon = document.createElement('i');
@@ -587,6 +581,13 @@ function applyPinnedAndFavoriteStyling() {
 
                 linkCard.appendChild(iconsContainer);
                 linkCard.appendChild(ActionIconsWR);
+                if (favoritedOnly) {
+                       
+                    favoritedIconEl.classList.remove('opacity-0');
+                }
+                if (pinnedOnly) {
+                    pinnedIcon.classList.remove('opacity-0');
+                }
 
                 linkCard.addEventListener('mouseenter', () => {
                     if (isCmdPressed) {
@@ -607,6 +608,13 @@ function applyPinnedAndFavoriteStyling() {
                     emojiContainer.classList.add('opacity-100');
                     emojiSpan.classList.remove('opacity-40');
                     emojiSpan.classList.add('opacity-100');
+                    favoritedIconEl.classList.remove('hidden');
+                    pinnedIcon.classList.remove('hidden');
+                    setTimeout(() => {
+                        pinnedIcon.classList.remove('opacity-0');
+                        favoritedIconEl.classList.remove('opacity-0');
+                    }, 200);
+                  
                 });
 
                 linkCard.addEventListener('mouseleave', () => {
@@ -621,9 +629,17 @@ function applyPinnedAndFavoriteStyling() {
                         descriptionSpan.classList.remove('text-white');
                     }
                     emojiContainer.classList.remove('opacity-100');
+                    if (!favoritedOnly) {
+                        if (!shortcut.favorited) favoritedIconEl.classList.add('opacity-0');
+                    }
+                    if (!pinnedOnly) {
+                        if (!shortcut.pinned) pinnedIcon.classList.add('opacity-0');
+                    }
                     setTimeout(() => {
                         statusBadgeContainer.classList.add('hidden');
                         iconContainer.classList.add('hidden');
+                        if (!shortcut.favorited)favoritedIconEl.classList.add('hidden');
+                        if (!shortcut.pinned)pinnedIcon.classList.add('hidden');
                     }, 200);
                 });
 
@@ -1348,6 +1364,50 @@ function handleTagClick(tagElement) {
         linkIdField.value = '';
         containerModal.classList.add('hidden');
     }
+
+    const autofillBtn = document.getElementById('autofill-button');
+    // autofillBtn.type = 'button';
+    // autofillBtn.textContent = 'Autofill';
+    // autofillBtn.classList.add('absolute', 'right-2', 'top-[2.5rem]', 'text-sm', 'bg-gray-200', 'dark:bg-gray-700', 'px-2', 'py-1', 'rounded', 'hover:bg-gray-300', 'dark:hover:bg-gray-600');
+    // linkUrlField.parentElement.style.position = 'relative';
+    // linkUrlField.parentElement.appendChild(autofillBtn);
+
+    autofillBtn.addEventListener('click', () => {
+        let autofillIcon = autofillBtn.querySelector('i');
+        autofillIcon.classList.add('animate-spin');
+        const url = linkUrlField.value.trim();
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            alert('Please enter a valid URL including http:// or https://');
+            autofillIcon.classList.remove('animate-spin');
+
+            return;
+        }
+        fetch(`/api/autofill?url=${encodeURIComponent(url)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                alert('Autofill failed: ' + data.error);
+                autofillIcon.classList.remove('animate-spin');  
+                return;
+            }
+            linkNameField.value = data.name || '';
+            linkEmojisField.value = data.emoji || '📟';
+            colorFromField.value = data.colorFrom || '#ffffff';
+            colorToField.value = data.colorTo || '#ffffff';
+            shortDescriptionField.value = data.short_description || '';
+            scoreField.value = '';
+            pinnedField.checked = false;
+            favoritedField.checked = false;
+
+            autofillIcon.classList.remove('animate-spin');
+        })
+        .catch(err => {
+            autofillIcon.classList.remove('animate-spin');
+            console.error('Autofill error:', err);
+            alert('Autofill failed. Check console for details.');
+        });
+
+    });
 
     fetch('/api/tags')
         .then(response => response.json())
